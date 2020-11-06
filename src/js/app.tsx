@@ -62,8 +62,10 @@ class App extends React.Component<IAppProps, IAppState>
 
         const smallStuff = [];
         if (channelData) {
-            for (let index = 0; index < 500; index++) {
-                smallStuff.push(Math.abs(channelData[index]*100000));
+            const SAMPLES = 500;
+            const groupSize = Math.floor(channelData.length / SAMPLES);
+            for (let index = 0; index < channelData.length; index += groupSize) {
+                smallStuff.push(Math.abs(channelData[index]*300));
             }
         }
 
