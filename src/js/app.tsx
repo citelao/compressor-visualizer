@@ -5,7 +5,7 @@ import ReactDOM from "react-dom";
 interface IAppProps {}
 
 interface IAppState {
-    audioNode: AudioNode | null,
+    audioBufferSourceNode: AudioBufferSourceNode | null,
     audioContext: AudioContext | null
 }
 
@@ -19,42 +19,35 @@ class App extends React.Component<IAppProps, IAppState>
         this.audioRef = React.createRef();
     }
 
-    public componentDidMount()
+    public async componentDidMount()
     {
-        if (!this.audioRef || !this.audioRef.current) {
-            throw new Error("Expected an audio ref");
-        }
+        // if (!this.audioRef || !this.audioRef.current) {
+        //     throw new Error("Expected an audio ref");
+        // }
 
-        // const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
-        // const audioContext = new AudioContext();
-        // const audioNode = audioContext.createMediaElementSource(this.audioRef.current);
+        const buffer = await fetchAudioBuffer("notrack/ryan.wav");
+        console.log(buffer);
+    
+        const audioContext = new AudioContext();
+        const bufferSource = audioContext.createBufferSource();
+        bufferSource.buffer = buffer;
+    
+        const compressor = audioContext.createDynamicsCompressor();
+        compressor.threshold.value = -50;
+        compressor.knee.value = 40;
+        compressor.ratio.value = 12;
+        compressor.attack.value = 0;
+        compressor.release.value = 0.25;
+    
+        bufferSource.connect(audioContext.destination);
+        // bufferSource.connect(compressor).connect(audioContext.destination);
+    
+        // bufferSource.start();
 
-        // // const gainNode = audioContext.createGain();
-        // // gainNode.gain.value = 2;
-        // // Create a compressor node
-        // const compressor = audioContext.createDynamicsCompressor();
-        // compressor.threshold.value = -50;
-        // compressor.knee.value = 40;
-        // compressor.ratio.value = 12;
-        // compressor.attack.value = 0;
-        // compressor.release.value = 0.25;
-
-        // const SAMPLE_RATE = 44100;
-        // const LENGTH_S = 40;
-        // const BUFFER_SIZE = SAMPLE_RATE * LENGTH_S;
-        // const offlineAudioContext = new OfflineAudioContext(audioNode.channelCount, BUFFER_SIZE, SAMPLE_RATE);
-
-        // // audioNode.disconnect(audioContext.destination);
-        // audioNode.connect(compressor).connect(offlineAudioContext.destination);
-        // offlineAudioContext.startRendering().then((renderedBuffer) => {
-        //     console.log("rednered", renderedBuffer.length);
-        // });
-        // // TODO: render output to OfflineAudioContext for analysis
-
-        // this.setState({
-        //     audioNode: audioNode,
-        //     audioContext: audioContext
-        // });
+        this.setState({
+            audioBufferSourceNode: bufferSource,
+            audioContext: audioContext
+        });
     }
 
     public render() {
@@ -62,11 +55,11 @@ class App extends React.Component<IAppProps, IAppState>
             <h1>Compressor Visualizer</h1>
 
             {/* TODO: allow uploading */}
-            <audio controls
+            {/* <audio controls
                 src="notrack/ryan.wav"
                 ref={this.audioRef}>
                 Your browser does not support the audio element :(.
-            </audio>
+            </audio> */}
             <button onClick={this.handlePlay}>Play Audio Context</button>
             <p>visualizer here</p>
             <p>(output here)</p>
@@ -86,15 +79,15 @@ class App extends React.Component<IAppProps, IAppState>
     }
 
     private handlePlay = () => {
-        // if (!this.state.audioContext || !this.state.audioNode) {
-        //     throw new Error("You need an audio context");
-        // }
+        if (!this.state.audioContext || !this.state.audioBufferSourceNode) {
+            throw new Error("You need an audio context");
+        }
 
         // if (this.state.audioContext.state === "suspended") {
         //     this.state.audioContext.resume();
         // }
 
-        // if (this.state.audioNode.)
+        this.state.audioBufferSourceNode.start();
     }
 }
 
@@ -135,26 +128,3 @@ async function fetchAudioBuffer(uri: string): Promise<AudioBuffer> {
         }
     });
 }
-
-async function run() {
-    const buffer = await fetchAudioBuffer("notrack/ryan.wav");
-    console.log(buffer);
-
-    const audioContext = new AudioContext();
-    const bufferSource = audioContext.createBufferSource();
-    bufferSource.buffer = buffer;
-
-    const compressor = audioContext.createDynamicsCompressor();
-    compressor.threshold.value = -50;
-    compressor.knee.value = 40;
-    compressor.ratio.value = 12;
-    compressor.attack.value = 0;
-    compressor.release.value = 0.25;
-
-    bufferSource.connect(audioContext.destination);
-    // bufferSource.connect(compressor).connect(audioContext.destination);
-
-    // bufferSource.start();
-}
-
-run();
