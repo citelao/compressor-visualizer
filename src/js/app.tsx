@@ -60,10 +60,12 @@ class App extends React.Component<IAppProps, IAppState>
     public render() {
         const channelData = this.state.audioBuffer?.getChannelData(0);
 
-        let smallStuff;
+        let randomWaveform;
+        let meanWaveform;
         if (channelData) {
             const SAMPLES = 500;
-            smallStuff = randomSample(channelData, SAMPLES);
+            randomWaveform = randomSample(channelData, SAMPLES);
+            meanWaveform = absMeanSample(channelData, SAMPLES);
         }
 
         return <>
@@ -79,8 +81,12 @@ class App extends React.Component<IAppProps, IAppState>
             <p>visualizer here</p>
             <p>(output here)</p>
             <p>{this.state.audioBuffer?.length}</p>
-            {(smallStuff)
-                ? <Waveform numbers={smallStuff} />
+            {(randomWaveform)
+                ? <Waveform numbers={randomWaveform} />
+                : null
+            }
+            {(meanWaveform)
+                ? <Waveform numbers={meanWaveform} />
                 : null
             }
 
@@ -155,7 +161,37 @@ function randomSample(arr: Float32Array, samples: number): Float32Array {
     const groupSize = Math.floor(arr.length / samples);
     for (let index = 0; index < samples; index++) {
         const inputIndex = groupSize * index;
-        outputArray[index] = Math.abs(arr[inputIndex] * 300);
+        outputArray[index] = arr[inputIndex];
+    }
+
+    return outputArray;
+}
+
+function meanSample(arr: Float32Array, samples: number): Float32Array {
+    const outputArray = new Float32Array(samples);
+
+    const groupSize = Math.floor(arr.length / samples);
+    for (let index = 0; index < samples; index++) {
+        const beginIndex = groupSize * index;
+        const endIndex = groupSize * (index + 1);
+        const subArray = arr.subarray(beginIndex, endIndex);
+        const mean = (subArray.reduce((acc, v) => acc + v, 0)) / subArray.length;
+        outputArray[index] = mean;
+    }
+
+    return outputArray;
+}
+
+function absMeanSample(arr: Float32Array, samples: number): Float32Array {
+    const outputArray = new Float32Array(samples);
+
+    const groupSize = Math.floor(arr.length / samples);
+    for (let index = 0; index < samples; index++) {
+        const beginIndex = groupSize * index;
+        const endIndex = groupSize * (index + 1);
+        const subArray = arr.subarray(beginIndex, endIndex);
+        const mean = (subArray.reduce((acc, v) => acc + Math.abs(v), 0)) / subArray.length;
+        outputArray[index] = mean;
     }
 
     return outputArray;

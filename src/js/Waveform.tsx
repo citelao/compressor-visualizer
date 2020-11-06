@@ -13,7 +13,8 @@ export default class Waveform extends React.Component<IWaveformProps, IWaveformS
     public render() {
         return <svg>
             {Array.from(this.props.numbers).map((v, i) => {
-                return <rect x={i} width={1} height={v} color="black" />;
+                const height = Math.abs(v) * 300;
+                return <rect x={i} width={1} height={height} color="black" />;
             })}
         </svg>;
     }
