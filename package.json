@@ -8,6 +8,9 @@
   },
   "author": "",
   "license": "ISC",
+  "browserslist": [
+    "last 1 Chrome version"
+  ],
   "devDependencies": {
     "@types/react": "^16.9.55",
     "@types/react-dom": "^16.9.9",

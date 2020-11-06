@@ -2,7 +2,7 @@ import React from "react";
 import ReactDOM from "react-dom";
 
 interface IWaveformProps {
-    numbers: number[];
+    numbers: Float32Array;
 }
 
 interface IWaveformState {
@@ -12,7 +12,7 @@ export default class Waveform extends React.Component<IWaveformProps, IWaveformS
 {
     public render() {
         return <svg>
-            {this.props.numbers.map((v, i) => {
+            {Array.from(this.props.numbers).map((v, i) => {
                 return <rect x={i} width={1} height={v} color="black" />;
             })}
         </svg>;

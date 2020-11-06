@@ -60,13 +60,10 @@ class App extends React.Component<IAppProps, IAppState>
     public render() {
         const channelData = this.state.audioBuffer?.getChannelData(0);
 
-        const smallStuff = [];
+        let smallStuff;
         if (channelData) {
             const SAMPLES = 500;
-            const groupSize = Math.floor(channelData.length / SAMPLES);
-            for (let index = 0; index < channelData.length; index += groupSize) {
-                smallStuff.push(Math.abs(channelData[index]*300));
-            }
+            smallStuff = randomSample(channelData, SAMPLES);
         }
 
         return <>
@@ -82,7 +79,10 @@ class App extends React.Component<IAppProps, IAppState>
             <p>visualizer here</p>
             <p>(output here)</p>
             <p>{this.state.audioBuffer?.length}</p>
-            <Waveform numbers={smallStuff} />
+            {(smallStuff)
+                ? <Waveform numbers={smallStuff} />
+                : null
+            }
 
             <fieldset>
                 <legend>Controls</legend>
@@ -147,4 +147,16 @@ async function fetchAudioBuffer(uri: string): Promise<AudioBuffer> {
             reject(e);
         }
     });
+}
+
+function randomSample(arr: Float32Array, samples: number): Float32Array {
+    const outputArray = new Float32Array(samples);
+
+    const groupSize = Math.floor(arr.length / samples);
+    for (let index = 0; index < samples; index++) {
+        const inputIndex = groupSize * index;
+        outputArray[index] = Math.abs(arr[inputIndex] * 300);
+    }
+
+    return outputArray;
 }
