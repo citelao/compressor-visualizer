@@ -66,12 +66,12 @@ class App extends React.Component<IAppProps, IAppState>
     public render() {
         const channelData = this.state.audioBuffer?.getChannelData(0);
 
-        let randomWaveform;
+        let maxWaveform;
         let meanWaveform;
         let rmsWaveform;
         if (channelData) {
             const SAMPLES = 500;
-            randomWaveform = randomSample(channelData, SAMPLES);
+            maxWaveform = absMaxSample(channelData, SAMPLES);
             meanWaveform = absMeanSample(channelData, SAMPLES);
             rmsWaveform = rmsSample(channelData, SAMPLES);
         }
@@ -87,8 +87,8 @@ class App extends React.Component<IAppProps, IAppState>
             </audio> */}
             <button onClick={this.handlePlay}>Play Audio Context</button>
             <p>Original ({this.state.audioBuffer?.length})</p>
-            {(randomWaveform)
-                ? <Waveform numbers={randomWaveform} />
+            {(maxWaveform)
+                ? <Waveform numbers={maxWaveform} />
                 : null
             }
             <br/>
@@ -175,6 +175,21 @@ function randomSample(arr: Float32Array, samples: number): Float32Array {
     for (let index = 0; index < samples; index++) {
         const inputIndex = groupSize * index;
         outputArray[index] = arr[inputIndex];
+    }
+
+    return outputArray;
+}
+
+function absMaxSample(arr: Float32Array, samples: number): Float32Array {
+    const outputArray = new Float32Array(samples);
+
+    const groupSize = Math.floor(arr.length / samples);
+    for (let index = 0; index < samples; index++) {
+        const beginIndex = groupSize * index;
+        const endIndex = groupSize * (index + 1);
+        const subArray = arr.subarray(beginIndex, endIndex);
+        const max = subArray.reduce((max, v) => Math.max(max, Math.abs(v)), - Infinity);
+        outputArray[index] = max;
     }
 
     return outputArray;
