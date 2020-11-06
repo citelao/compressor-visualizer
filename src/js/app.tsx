@@ -6,7 +6,8 @@ interface IAppProps {}
 
 interface IAppState {
     audioBufferSourceNode: AudioBufferSourceNode | null,
-    audioContext: AudioContext | null
+    audioContext: AudioContext | null,
+    audioBuffer: AudioBuffer | null
 }
 
 class App extends React.Component<IAppProps, IAppState>
@@ -17,6 +18,11 @@ class App extends React.Component<IAppProps, IAppState>
         super(props);
 
         this.audioRef = React.createRef();
+        this.state = {
+            audioBufferSourceNode: null,
+            audioContext: null,
+            audioBuffer: null
+        };
     }
 
     public async componentDidMount()
@@ -45,6 +51,7 @@ class App extends React.Component<IAppProps, IAppState>
         // bufferSource.start();
 
         this.setState({
+            audioBuffer: buffer,
             audioBufferSourceNode: bufferSource,
             audioContext: audioContext
         });
@@ -63,6 +70,7 @@ class App extends React.Component<IAppProps, IAppState>
             <button onClick={this.handlePlay}>Play Audio Context</button>
             <p>visualizer here</p>
             <p>(output here)</p>
+            <p>{this.state.audioBuffer?.length}</p>
 
             <fieldset>
                 <legend>Controls</legend>
