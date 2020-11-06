@@ -136,7 +136,25 @@ async function fetchAudioBuffer(uri: string): Promise<AudioBuffer> {
     });
 }
 
-fetchAudioBuffer("notrack/ryan.wav")
-    .then((buffer) => {
-        console.log(buffer, "fofo");
-    });
+async function run() {
+    const buffer = await fetchAudioBuffer("notrack/ryan.wav");
+    console.log(buffer);
+
+    const audioContext = new AudioContext();
+    const bufferSource = audioContext.createBufferSource();
+    bufferSource.buffer = buffer;
+
+    const compressor = audioContext.createDynamicsCompressor();
+    compressor.threshold.value = -50;
+    compressor.knee.value = 40;
+    compressor.ratio.value = 12;
+    compressor.attack.value = 0;
+    compressor.release.value = 0.25;
+
+    bufferSource.connect(audioContext.destination);
+    // bufferSource.connect(compressor).connect(audioContext.destination);
+
+    // bufferSource.start();
+}
+
+run();
