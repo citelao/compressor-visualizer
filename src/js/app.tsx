@@ -9,6 +9,8 @@ interface IAppState {
     audioContext: AudioContext | null,
     audioBuffer: AudioBuffer | null,
 
+    transformedBuffer: AudioBuffer | null,
+
     compressor: {
         threshold: number
     }
@@ -27,8 +29,10 @@ class App extends React.Component<IAppProps, IAppState>
             audioContext: null,
             audioBuffer: null,
 
+            transformedBuffer: null,
+
             compressor: {
-                threshold: -50;
+                threshold: -50
             }
         };
     }
@@ -61,19 +65,44 @@ class App extends React.Component<IAppProps, IAppState>
             audioBufferSourceNode: bufferSource,
             audioContext: audioContext
         });
+
+        const effectsBuffer = await renderEffectsChain(this.state.audioBuffer!, (ctx, buf) => {
+            const compressor = ctx.createDynamicsCompressor();
+            compressor.threshold.value = this.state.compressor.threshold;
+            compressor.knee.value = 40;
+            compressor.ratio.value = 12;
+            compressor.attack.value = 0;
+            compressor.release.value = 0.25;
+
+            return buf.connect(compressor);
+        });
+
+        this.setState({
+            transformedBuffer: effectsBuffer
+        });
     }
 
     public render() {
         const channelData = this.state.audioBuffer?.getChannelData(0);
+        const SAMPLES = 500;
 
         let maxWaveform;
         let meanWaveform;
         let rmsWaveform;
         if (channelData) {
-            const SAMPLES = 500;
             maxWaveform = absMaxSample(channelData, SAMPLES);
             meanWaveform = absMeanSample(channelData, SAMPLES);
             rmsWaveform = rmsSample(channelData, SAMPLES);
+        }
+
+        const transformedData = this.state.transformedBuffer?.getChannelData(0);
+        let transformedMaxWaveform;
+        let transformedMeanWaveform;
+        let transformedRmsWaveform;
+        if (transformedData) {
+            transformedMaxWaveform = absMaxSample(transformedData, SAMPLES);
+            transformedMeanWaveform = absMeanSample(transformedData, SAMPLES);
+            transformedRmsWaveform = rmsSample(transformedData, SAMPLES);
         }
 
         return <>
@@ -101,7 +130,21 @@ class App extends React.Component<IAppProps, IAppState>
                 ? <Waveform numbers={rmsWaveform} />
                 : null
             }
-            <p>(output here)</p>
+            <p>Modified:</p>
+            {(transformedMaxWaveform)
+                ? <Waveform numbers={transformedMaxWaveform} />
+                : null
+            }
+            <br/>
+            {(transformedMeanWaveform)
+                ? <Waveform numbers={transformedMeanWaveform} />
+                : null
+            }
+            <br/>
+            {(transformedRmsWaveform)
+                ? <Waveform numbers={transformedRmsWaveform} />
+                : null
+            }
 
             <fieldset>
                 <legend>Controls</legend>
@@ -238,4 +281,21 @@ function rmsSample(arr: Float32Array, samples: number): Float32Array {
     }
 
     return outputArray;
+}
+
+// Just give me a function that returns the AudioNode you want hooked up to the
+// destination.
+async function renderEffectsChain(inputBuffer: AudioBuffer, chainFn: (context: OfflineAudioContext, bufferSource: AudioBufferSourceNode) => AudioNode): Promise<AudioBuffer> {
+    const audioContext = new OfflineAudioContext(inputBuffer.numberOfChannels, inputBuffer.length, inputBuffer.sampleRate);
+    const bufferSource = audioContext.createBufferSource();
+    bufferSource.buffer = inputBuffer;
+
+    const node = chainFn(audioContext, bufferSource);
+
+    node.connect(audioContext.destination);
+    bufferSource.connect(audioContext.destination);
+    // bufferSource.connect(compressor).connect(audioContext.destination);
+
+    bufferSource.start();
+    return await audioContext.startRendering();
 }
