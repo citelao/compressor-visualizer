@@ -62,10 +62,12 @@ class App extends React.Component<IAppProps, IAppState>
 
         let randomWaveform;
         let meanWaveform;
+        let rmsWaveform;
         if (channelData) {
             const SAMPLES = 500;
             randomWaveform = randomSample(channelData, SAMPLES);
             meanWaveform = absMeanSample(channelData, SAMPLES);
+            rmsWaveform = rmsSample(channelData, SAMPLES);
         }
 
         return <>
@@ -85,8 +87,14 @@ class App extends React.Component<IAppProps, IAppState>
                 ? <Waveform numbers={randomWaveform} />
                 : null
             }
+            <br/>
             {(meanWaveform)
                 ? <Waveform numbers={meanWaveform} />
+                : null
+            }
+            <br/>
+            {(rmsWaveform)
+                ? <Waveform numbers={rmsWaveform} />
                 : null
             }
 
@@ -192,6 +200,21 @@ function absMeanSample(arr: Float32Array, samples: number): Float32Array {
         const subArray = arr.subarray(beginIndex, endIndex);
         const mean = (subArray.reduce((acc, v) => acc + Math.abs(v), 0)) / subArray.length;
         outputArray[index] = mean;
+    }
+
+    return outputArray;
+}
+
+function rmsSample(arr: Float32Array, samples: number): Float32Array {
+    const outputArray = new Float32Array(samples);
+
+    const groupSize = Math.floor(arr.length / samples);
+    for (let index = 0; index < samples; index++) {
+        const beginIndex = groupSize * index;
+        const endIndex = groupSize * (index + 1);
+        const subArray = arr.subarray(beginIndex, endIndex);
+        const sumOfSquares = (subArray.reduce((acc, v) => acc + (v * v), 0));
+        outputArray[index] = Math.sqrt(sumOfSquares / subArray.length);
     }
 
     return outputArray;
