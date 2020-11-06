@@ -58,6 +58,15 @@ class App extends React.Component<IAppProps, IAppState>
     }
 
     public render() {
+        const channelData = this.state.audioBuffer?.getChannelData(0);
+
+        const smallStuff = [];
+        if (channelData) {
+            for (let index = 0; index < 50; index++) {
+                smallStuff.push(channelData[index]);
+            }
+        }
+
         return <>
             <h1>Compressor Visualizer</h1>
 
@@ -71,6 +80,11 @@ class App extends React.Component<IAppProps, IAppState>
             <p>visualizer here</p>
             <p>(output here)</p>
             <p>{this.state.audioBuffer?.length}</p>
+            <p>
+                {smallStuff.map((v) => {
+                    return <>{v}<br /></>;
+                })}
+            </p>
 
             <fieldset>
                 <legend>Controls</legend>
