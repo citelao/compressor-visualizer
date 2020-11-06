@@ -84,7 +84,8 @@ class App extends React.Component<IAppProps, IAppState>
 
     public render() {
         const channelData = this.state.audioBuffer?.getChannelData(0);
-        const SAMPLES = 500;
+        const SAMPLES = 1000;
+        const WAVEFORM_WIDTH = 1000;
 
         let maxWaveform;
         let meanWaveform;
@@ -117,12 +118,12 @@ class App extends React.Component<IAppProps, IAppState>
             <button onClick={this.handlePlay}>Play Audio Context</button>
             <p>Original ({this.state.audioBuffer?.length})</p>
             {(maxWaveform && meanWaveform && rmsWaveform)
-                ? <Waveform numbers={[maxWaveform, meanWaveform, rmsWaveform]} />
+                ? <Waveform width={WAVEFORM_WIDTH} numbers={[maxWaveform, meanWaveform, rmsWaveform]} />
                 : null
             }
             <p>Modified:</p>
             {(transformedMaxWaveform && transformedMeanWaveform && transformedRmsWaveform)
-                ? <Waveform numbers={[transformedMaxWaveform, transformedMeanWaveform, transformedRmsWaveform]} />
+                ? <Waveform width={WAVEFORM_WIDTH} numbers={[transformedMaxWaveform, transformedMeanWaveform, transformedRmsWaveform]} />
                 : null
             }
 
@@ -237,10 +238,12 @@ function absMeanSample(arr: Float32Array, samples: number): Float32Array {
     const outputArray = new Float32Array(samples);
 
     const groupSize = Math.floor(arr.length / samples);
+    console.log(groupSize);
     for (let index = 0; index < samples; index++) {
         const beginIndex = groupSize * index;
         const endIndex = groupSize * (index + 1);
         const subArray = arr.subarray(beginIndex, endIndex);
+        console.log(subArray.length);
         const mean = (subArray.reduce((acc, v) => acc + Math.abs(v), 0)) / subArray.length;
         outputArray[index] = mean;
     }
