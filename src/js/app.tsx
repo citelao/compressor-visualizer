@@ -1,6 +1,6 @@
-import "react";
 import React from "react";
 import ReactDOM from "react-dom";
+import Waveform from "./Waveform";
 
 interface IAppProps {}
 
@@ -63,7 +63,7 @@ class App extends React.Component<IAppProps, IAppState>
         const smallStuff = [];
         if (channelData) {
             for (let index = 0; index < 50; index++) {
-                smallStuff.push(channelData[index]);
+                smallStuff.push(Math.abs(channelData[index]*100000));
             }
         }
 
@@ -80,11 +80,7 @@ class App extends React.Component<IAppProps, IAppState>
             <p>visualizer here</p>
             <p>(output here)</p>
             <p>{this.state.audioBuffer?.length}</p>
-            <p>
-                {smallStuff.map((v) => {
-                    return <>{v}<br /></>;
-                })}
-            </p>
+            <Waveform numbers={smallStuff} />
 
             <fieldset>
                 <legend>Controls</legend>
