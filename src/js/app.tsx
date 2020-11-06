@@ -25,26 +25,36 @@ class App extends React.Component<IAppProps, IAppState>
             throw new Error("Expected an audio ref");
         }
 
-        const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
-        const audioContext = new AudioContext();
-        const audioNode = audioContext.createMediaElementSource(this.audioRef.current);
+        // const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+        // const audioContext = new AudioContext();
+        // const audioNode = audioContext.createMediaElementSource(this.audioRef.current);
 
-        // const gainNode = audioContext.createGain();
-        // gainNode.gain.value = 2;
-        // Create a compressor node
-        const compressor = audioContext.createDynamicsCompressor();
-        compressor.threshold.value = -50;
-        compressor.knee.value = 40;
-        compressor.ratio.value = 12;
-        compressor.attack.value = 0;
-        compressor.release.value = 0.25;
-        // audioNode.disconnect(audioContext.destination);
-        audioNode.connect(compressor).connect(audioContext.destination);
+        // // const gainNode = audioContext.createGain();
+        // // gainNode.gain.value = 2;
+        // // Create a compressor node
+        // const compressor = audioContext.createDynamicsCompressor();
+        // compressor.threshold.value = -50;
+        // compressor.knee.value = 40;
+        // compressor.ratio.value = 12;
+        // compressor.attack.value = 0;
+        // compressor.release.value = 0.25;
 
-        this.setState({
-            audioNode: audioNode,
-            audioContext: audioContext
-        });
+        // const SAMPLE_RATE = 44100;
+        // const LENGTH_S = 40;
+        // const BUFFER_SIZE = SAMPLE_RATE * LENGTH_S;
+        // const offlineAudioContext = new OfflineAudioContext(audioNode.channelCount, BUFFER_SIZE, SAMPLE_RATE);
+
+        // // audioNode.disconnect(audioContext.destination);
+        // audioNode.connect(compressor).connect(offlineAudioContext.destination);
+        // offlineAudioContext.startRendering().then((renderedBuffer) => {
+        //     console.log("rednered", renderedBuffer.length);
+        // });
+        // // TODO: render output to OfflineAudioContext for analysis
+
+        // this.setState({
+        //     audioNode: audioNode,
+        //     audioContext: audioContext
+        // });
     }
 
     public render() {
@@ -90,3 +100,29 @@ class App extends React.Component<IAppProps, IAppState>
 
 const app = document.getElementById("app");
 ReactDOM.render(<App />, app);
+
+// https://developer.mozilla.org/en-US/docs/Web/API/OfflineAudioContext
+const CHANNELS = 2;
+const SAMPLE_RATE = 44100;
+const LENGTH_S = 40;
+const SAMPLE_COUNT = SAMPLE_RATE * LENGTH_S;
+const audioContext = new AudioContext();
+const offlineContext = new OfflineAudioContext(CHANNELS, SAMPLE_COUNT, SAMPLE_RATE);
+const request = new XMLHttpRequest();
+const bufferSource = offlineContext.createBufferSource();
+request.open("GET", "notrack/ryan.wav", true);
+request.responseType = "arraybuffer";
+request.onload = function() {
+    const audioData = request.response;
+    
+    audioContext.decodeAudioData(audioData, function(decodedData) {
+        bufferSource.buffer = decodedData;
+        bufferSource.connect(offlineContext.destination);
+        bufferSource.start();
+
+        offlineContext.startRendering().then(function(renderedBuffer) {
+            console.log("Rendered", renderedBuffer.length);
+        });
+    });
+}
+request.send();
