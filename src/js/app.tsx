@@ -116,33 +116,13 @@ class App extends React.Component<IAppProps, IAppState>
             </audio> */}
             <button onClick={this.handlePlay}>Play Audio Context</button>
             <p>Original ({this.state.audioBuffer?.length})</p>
-            {(maxWaveform)
-                ? <Waveform numbers={maxWaveform} />
-                : null
-            }
-            <br/>
-            {(meanWaveform)
-                ? <Waveform numbers={meanWaveform} />
-                : null
-            }
-            <br/>
-            {(rmsWaveform)
-                ? <Waveform numbers={rmsWaveform} />
+            {(maxWaveform && meanWaveform && rmsWaveform)
+                ? <Waveform numbers={[maxWaveform, meanWaveform, rmsWaveform]} />
                 : null
             }
             <p>Modified:</p>
-            {(transformedMaxWaveform)
-                ? <Waveform numbers={transformedMaxWaveform} />
-                : null
-            }
-            <br/>
-            {(transformedMeanWaveform)
-                ? <Waveform numbers={transformedMeanWaveform} />
-                : null
-            }
-            <br/>
-            {(transformedRmsWaveform)
-                ? <Waveform numbers={transformedRmsWaveform} />
+            {(transformedMaxWaveform && transformedMeanWaveform && transformedRmsWaveform)
+                ? <Waveform numbers={[transformedMaxWaveform, transformedMeanWaveform, transformedRmsWaveform]} />
                 : null
             }
 
