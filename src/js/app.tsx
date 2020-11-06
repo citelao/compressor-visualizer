@@ -7,7 +7,11 @@ interface IAppProps {}
 interface IAppState {
     audioBufferSourceNode: AudioBufferSourceNode | null,
     audioContext: AudioContext | null,
-    audioBuffer: AudioBuffer | null
+    audioBuffer: AudioBuffer | null,
+
+    compressor: {
+        threshold: number
+    }
 }
 
 class App extends React.Component<IAppProps, IAppState>
@@ -21,7 +25,11 @@ class App extends React.Component<IAppProps, IAppState>
         this.state = {
             audioBufferSourceNode: null,
             audioContext: null,
-            audioBuffer: null
+            audioBuffer: null,
+
+            compressor: {
+                threshold: -50;
+            }
         };
     }
 
@@ -39,16 +47,14 @@ class App extends React.Component<IAppProps, IAppState>
         bufferSource.buffer = buffer;
     
         const compressor = audioContext.createDynamicsCompressor();
-        compressor.threshold.value = -50;
+        compressor.threshold.value = this.state.compressor.threshold;
         compressor.knee.value = 40;
         compressor.ratio.value = 12;
         compressor.attack.value = 0;
         compressor.release.value = 0.25;
-    
+
         bufferSource.connect(audioContext.destination);
         // bufferSource.connect(compressor).connect(audioContext.destination);
-    
-        // bufferSource.start();
 
         this.setState({
             audioBuffer: buffer,
@@ -80,9 +86,7 @@ class App extends React.Component<IAppProps, IAppState>
                 Your browser does not support the audio element :(.
             </audio> */}
             <button onClick={this.handlePlay}>Play Audio Context</button>
-            <p>visualizer here</p>
-            <p>(output here)</p>
-            <p>{this.state.audioBuffer?.length}</p>
+            <p>Original ({this.state.audioBuffer?.length})</p>
             {(randomWaveform)
                 ? <Waveform numbers={randomWaveform} />
                 : null
@@ -97,6 +101,7 @@ class App extends React.Component<IAppProps, IAppState>
                 ? <Waveform numbers={rmsWaveform} />
                 : null
             }
+            <p>(output here)</p>
 
             <fieldset>
                 <legend>Controls</legend>
