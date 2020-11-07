@@ -102,11 +102,11 @@ class App extends React.Component<IAppProps, IAppState>
                 const compressionCurve = (input: number) => {
                     // TODO
                     const linearThreshold = gainToLinear(this.state.compressor.threshold);
-                    const linearKnee = gainToLinear(this.state.compressor.ratio);
-                    console.log(`threshold: ${linearThreshold}; knee: ${linearKnee}`)
+                    const linearKneeEnd = gainToLinear(this.state.compressor.threshold + this.state.compressor.knee);
+                    console.log(`threshold: ${linearThreshold}; knee end: ${linearKneeEnd}`)
                     if (input < linearThreshold) {
                         return input;
-                    } else if (input < linearThreshold + linearKnee) {
+                    } else if (input < linearKneeEnd) {
                         // User-agent dependent
                         // TODO
                         return input;
