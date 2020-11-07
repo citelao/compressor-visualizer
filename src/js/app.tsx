@@ -5,6 +5,13 @@ import Waveform from "./Waveform";
 
 interface IAppProps {}
 
+interface ICompressorSettings {
+    threshold: number,
+    ratio: number,
+    knee: number,
+    attack: number,
+}
+
 interface IAppState {
     audioBufferSourceNode: AudioBufferSourceNode | null,
     audioContext: AudioContext | null,
@@ -14,11 +21,7 @@ interface IAppState {
     transformedBuffer: AudioBuffer | null,
     transformedRenderTimeMs: number,
 
-    compressor: {
-        threshold: number,
-        ratio: number,
-        knee: number,
-    },
+    compressor: ICompressorSettings,
 
     samples: number
 }
@@ -44,6 +47,7 @@ class App extends React.Component<IAppProps, IAppState>
                 threshold: -50,
                 ratio: 2,
                 knee: 0,
+                attack: 0
             },
 
             samples: 500
@@ -69,7 +73,7 @@ class App extends React.Component<IAppProps, IAppState>
         compressor.threshold.value = this.state.compressor.threshold;
         compressor.knee.value = this.state.compressor.knee;
         compressor.ratio.value = this.state.compressor.ratio;
-        compressor.attack.value = 0;
+        compressor.attack.value = this.state.compressor.attack;
         compressor.release.value = 0.25;
 
         bufferSource.connect(audioContext.destination);
@@ -87,14 +91,15 @@ class App extends React.Component<IAppProps, IAppState>
         const hasRenderedTransform = !!this.state.transformedBuffer;
         const thresholdChanged = this.state.compressor.threshold != prevState.compressor.threshold;
         const ratioChanged = this.state.compressor.ratio != prevState.compressor.ratio;
-        if (!hasRenderedTransform || thresholdChanged || ratioChanged) {
+        const attackChanged = this.state.compressor.attack != prevState.compressor.attack;
+        if (!hasRenderedTransform || thresholdChanged || ratioChanged || attackChanged) {
             const timer = new Timer();
             const effectsBuffer = await renderEffectsChain(this.state.audioBuffer!, (ctx, buf) => {
                 const compressor = ctx.createDynamicsCompressor();
                 compressor.threshold.value = this.state.compressor.threshold;
                 compressor.knee.value = this.state.compressor.knee;
                 compressor.ratio.value = this.state.compressor.ratio;
-                compressor.attack.value = 0;
+                compressor.attack.value = this.state.compressor.attack;
                 compressor.release.value = 0.25;
 
                 const gain = ctx.createGain();
@@ -162,6 +167,10 @@ class App extends React.Component<IAppProps, IAppState>
         }
         const calculationTime = calcTimer.stop();
 
+        const getUpdatedCompressorSettings = (partial: Partial<ICompressorSettings>): ICompressorSettings => {
+            return Object.assign({}, this.state.compressor, partial);
+        };
+
         return <>
             <h1>Compressor Visualizer</h1>
 
@@ -197,16 +206,25 @@ class App extends React.Component<IAppProps, IAppState>
                 </label>
 
                 <p>threshold</p>
-                <button onClick={() => this.setState({ compressor: { threshold: -90, ratio: this.state.compressor.ratio, knee: this.state.compressor.knee } })}>-90</button>
-                <button onClick={() => this.setState({ compressor: { threshold: -50, ratio: this.state.compressor.ratio, knee: this.state.compressor.knee } })}>-50</button>
-                <button onClick={() => this.setState({ compressor: { threshold: -10, ratio: this.state.compressor.ratio, knee: this.state.compressor.knee } })}>-10</button>
+                <button onClick={() => this.setState({ compressor: getUpdatedCompressorSettings({ threshold: -90 }) })}>-90</button>
+                <button onClick={() => this.setState({ compressor: getUpdatedCompressorSettings({ threshold: -50 }) })}>-50</button>
+                <button onClick={() => this.setState({ compressor: getUpdatedCompressorSettings({ threshold: -10 }) })}>-10</button>
                 <p>ratio</p>
-                <button onClick={() => this.setState({ compressor: { threshold: this.state.compressor.threshold, ratio: 20, knee: this.state.compressor.knee } })}>20</button>
-                <button onClick={() => this.setState({ compressor: { threshold: this.state.compressor.threshold, ratio: 12, knee: this.state.compressor.knee } })}>12</button>
-                <button onClick={() => this.setState({ compressor: { threshold: this.state.compressor.threshold, ratio: 2, knee: this.state.compressor.knee } })}>2</button>
+                <button onClick={() => this.setState({ compressor: getUpdatedCompressorSettings({ ratio: 20 }) })}>20</button>
+                <button onClick={() => this.setState({ compressor: getUpdatedCompressorSettings({ ratio: 12 }) })}>12</button>
+                <button onClick={() => this.setState({ compressor: getUpdatedCompressorSettings({ ratio: 2 }) })}>2</button>
                 <p>knee</p>
 
-                <p>attack</p>
+                <label>
+                    attack
+                    <input type="number"
+                        value={this.state.compressor.attack}
+                        min={0}
+                        max={1}
+                        step={0.1}
+                        onChange={(e) => this.setState({ compressor: getUpdatedCompressorSettings({ attack: e.target.valueAsNumber }) })} />
+                </label>
+
                 <p>release</p>
                 <p>gain</p>
             </fieldset>
