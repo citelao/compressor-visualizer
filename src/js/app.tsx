@@ -1,5 +1,6 @@
 import React from "react";
 import ReactDOM from "react-dom";
+import Sound from "./Sound";
 import Timer from "./timer";
 import Waveform from "./Waveform";
 
@@ -18,12 +19,12 @@ interface IAppState {
     audioBuffer: AudioBuffer | null,
     audioLoadTimeMs: number,
 
-    audioBufferSourceNode: AudioBufferSourceNode | null,
+    audioSound: Sound | null,
 
     transformedBuffer: AudioBuffer | null,
     transformedRenderTimeMs: number,
 
-    transformedBufferSourceNode: AudioBufferSourceNode | null,
+    transformedSound: Sound | null,
 
     compressor: ICompressorSettings,
 
@@ -39,7 +40,7 @@ class App extends React.Component<IAppProps, IAppState>
 
         this.audioRef = React.createRef();
         this.state = {
-            audioBufferSourceNode: null,
+            audioSound: null,
             audioContext: null,
             audioBuffer: null,
             audioLoadTimeMs: 0,
@@ -47,7 +48,7 @@ class App extends React.Component<IAppProps, IAppState>
             transformedBuffer: null,
             transformedRenderTimeMs: 0,
 
-            transformedBufferSourceNode: null,
+            transformedSound: null,
 
             compressor: {
                 threshold: -50,
@@ -71,26 +72,29 @@ class App extends React.Component<IAppProps, IAppState>
 
         const buffer = await fetchAudioBuffer("notrack/FourMoreWeeks_VansInJapan.mp3");
         console.log(buffer, absMeanSample(buffer.getChannelData(0), 1), rmsSample(buffer.getChannelData(0), 1));
-    
-        const audioContext = new AudioContext();
-        const bufferSource = audioContext.createBufferSource();
-        bufferSource.buffer = buffer;
-    
-        const compressor = audioContext.createDynamicsCompressor();
-        compressor.threshold.value = this.state.compressor.threshold;
-        compressor.knee.value = this.state.compressor.knee;
-        compressor.ratio.value = this.state.compressor.ratio;
-        compressor.attack.value = this.state.compressor.attack;
-        compressor.release.value = this.state.compressor.release;
 
-        bufferSource.connect(audioContext.destination);
-        // bufferSource.connect(compressor).connect(audioContext.destination);
+        const audioContext = new AudioContext();
+
+        const audioSound = new Sound(audioContext, buffer);
+
+        // const bufferSource = audioContext.createBufferSource();
+        // bufferSource.buffer = buffer;
+    
+        // const compressor = audioContext.createDynamicsCompressor();
+        // compressor.threshold.value = this.state.compressor.threshold;
+        // compressor.knee.value = this.state.compressor.knee;
+        // compressor.ratio.value = this.state.compressor.ratio;
+        // compressor.attack.value = this.state.compressor.attack;
+        // compressor.release.value = this.state.compressor.release;
+
+        // bufferSource.connect(audioContext.destination);
+        // // bufferSource.connect(compressor).connect(audioContext.destination);
 
         this.setState({
             audioBuffer: buffer,
-            audioBufferSourceNode: bufferSource,
             audioContext: audioContext,
-            audioLoadTimeMs: timer.stop()
+            audioLoadTimeMs: timer.stop(),
+            audioSound: audioSound
         });
     }
 
@@ -276,20 +280,16 @@ class App extends React.Component<IAppProps, IAppState>
     }
 
     private handlePlayOriginal = () => {
-        if (!this.state.audioContext || !this.state.audioBufferSourceNode) {
+        if (!this.state.audioContext || !this.state.audioSound) {
             throw new Error("You need an audio context");
         }
 
-        // if (this.state.audioContext.state === "suspended") {
-        //     this.state.audioContext.resume();
-        // }
-
-        this.state.transformedBufferSourceNode?.stop();
-        this.state.audioBufferSourceNode.start();
-
-        // this.setState({
-        //     audioBufferSourceNode: bufferNode
-        // });
+        if (this.state.audioSound.isPlaying()) {
+            this.state.audioSound.stop();
+        } else {
+            this.state.transformedSound?.stop();
+            this.state.audioSound.start();
+        }
     }
 
     private handlePlayModified = () => {
@@ -301,21 +301,15 @@ class App extends React.Component<IAppProps, IAppState>
         //     this.state.audioContext.resume();
         // }
 
-        if (this.state.transformedBufferSourceNode !== null) {
-            this.state.transformedBufferSourceNode.stop();
-            this.setState({
-                transformedBufferSourceNode: null
-            });
+        if (this.state.transformedSound?.isPlaying()) {
+            this.state.transformedSound.stop();
         } else {
-            const bufferNode = this.state.audioContext.createBufferSource();
-            bufferNode.buffer = this.state.transformedBuffer;
-            bufferNode.connect(this.state.audioContext.destination);
-
-            this.state.audioBufferSourceNode?.stop();
-            bufferNode.start();
+            const sound = new Sound(this.state.audioContext, this.state.transformedBuffer);
+            this.state.audioSound?.stop();
+            sound.start();
 
             this.setState({
-                transformedBufferSourceNode: bufferNode
+                transformedSound: sound
             });
         }
     }
