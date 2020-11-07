@@ -14,13 +14,16 @@ interface ICompressorSettings {
 }
 
 interface IAppState {
-    audioBufferSourceNode: AudioBufferSourceNode | null,
     audioContext: AudioContext | null,
     audioBuffer: AudioBuffer | null,
     audioLoadTimeMs: number,
 
+    audioBufferSourceNode: AudioBufferSourceNode | null,
+
     transformedBuffer: AudioBuffer | null,
     transformedRenderTimeMs: number,
+
+    transformedBufferSourceNode: AudioBufferSourceNode | null,
 
     compressor: ICompressorSettings,
 
@@ -43,6 +46,8 @@ class App extends React.Component<IAppProps, IAppState>
 
             transformedBuffer: null,
             transformedRenderTimeMs: 0,
+
+            transformedBufferSourceNode: null,
 
             compressor: {
                 threshold: -50,
@@ -279,7 +284,12 @@ class App extends React.Component<IAppProps, IAppState>
         //     this.state.audioContext.resume();
         // }
 
+        this.state.transformedBufferSourceNode?.stop();
         this.state.audioBufferSourceNode.start();
+
+        // this.setState({
+        //     audioBufferSourceNode: bufferNode
+        // });
     }
 
     private handlePlayModified = () => {
@@ -291,11 +301,23 @@ class App extends React.Component<IAppProps, IAppState>
         //     this.state.audioContext.resume();
         // }
 
-        const bufferNode = this.state.audioContext.createBufferSource();
-        bufferNode.buffer = this.state.transformedBuffer;
-        bufferNode.connect(this.state.audioContext.destination);
+        if (this.state.transformedBufferSourceNode !== null) {
+            this.state.transformedBufferSourceNode.stop();
+            this.setState({
+                transformedBufferSourceNode: null
+            });
+        } else {
+            const bufferNode = this.state.audioContext.createBufferSource();
+            bufferNode.buffer = this.state.transformedBuffer;
+            bufferNode.connect(this.state.audioContext.destination);
 
-        bufferNode.start();
+            this.state.audioBufferSourceNode?.stop();
+            bufferNode.start();
+
+            this.setState({
+                transformedBufferSourceNode: bufferNode
+            });
+        }
     }
 }
 
