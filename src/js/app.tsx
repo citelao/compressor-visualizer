@@ -91,7 +91,31 @@ class App extends React.Component<IAppProps, IAppState>
                 compressor.attack.value = 0;
                 compressor.release.value = 0.25;
 
-                return buf.connect(compressor);
+                const gain = ctx.createGain();
+                // https://www.w3.org/TR/webaudio/#compression-curve
+                // https://www.w3.org/TR/webaudio/#computing-the-makeup-gain
+                const compressionCurve = (input: number) => {
+                    // TODO
+                    const linearThreshold = this.state.compressor.threshold;
+                    const linearKnee = this.state.compressor.ratio;
+                    if (input < linearThreshold) {
+                        return input;
+                    } else if (input < linearThreshold + linearKnee) {
+                        // User-agent dependent
+                        // TODO
+                        return input;
+                    } else {
+                        return (1 / this.state.compressor.ratio) * input;
+                    }
+                };
+                const fullMakeupGain = compressionCurve(1.0);
+                const makeupGain = 0.6 * fullMakeupGain;
+                const invertMakeupGain = 1 / makeupGain;
+                gain.gain.value = invertMakeupGain;
+
+                console.log(fullMakeupGain, makeupGain, invertMakeupGain);
+
+                return buf.connect(compressor).connect(gain);
             });
 
             this.setState({
@@ -268,7 +292,7 @@ function absMeanSample(arr: Float32Array, samples: number): Float32Array {
         const beginIndex = groupSize * index;
         const endIndex = groupSize * (index + 1);
         const subArray = arr.subarray(beginIndex, endIndex);
-        console.log(subArray.length);
+        // console.log(subArray.length);
         const mean = (subArray.reduce((acc, v) => acc + Math.abs(v), 0)) / subArray.length;
         outputArray[index] = mean;
     }
