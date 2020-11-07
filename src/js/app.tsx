@@ -58,7 +58,7 @@ class App extends React.Component<IAppProps, IAppState>
 
         const timer = new Timer();
 
-        const buffer = await fetchAudioBuffer("notrack/ryan.wav");
+        const buffer = await fetchAudioBuffer("notrack/FourMoreWeeks_VansInJapan.mp3");
         console.log(buffer, absMeanSample(buffer.getChannelData(0), 1), rmsSample(buffer.getChannelData(0), 1));
     
         const audioContext = new AudioContext();
@@ -193,7 +193,7 @@ class App extends React.Component<IAppProps, IAppState>
 
                 <label>
                     View resolution
-                    <input type="range" onChange={this.handleResolutionChange} value={samples} min={1} max={WAVEFORM_WIDTH} />
+                    <input type="range" onChange={this.handleResolutionChange} value={Math.log2(samples)} min={1} max={Math.log2(WAVEFORM_WIDTH)} />
                 </label>
 
                 <p>threshold</p>
@@ -214,7 +214,7 @@ class App extends React.Component<IAppProps, IAppState>
     }
     
     private handleResolutionChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const resolution = e.target.valueAsNumber;
+        const resolution = Math.pow(2, e.target.valueAsNumber);
 
         this.setState({
             samples: resolution
