@@ -17,6 +17,7 @@ interface IAppState {
     compressor: {
         threshold: number,
         ratio: number,
+        knee: number,
     }
 }
 
@@ -40,6 +41,7 @@ class App extends React.Component<IAppProps, IAppState>
             compressor: {
                 threshold: -50,
                 ratio: 2,
+                knee: 0,
             }
         };
     }
@@ -53,7 +55,7 @@ class App extends React.Component<IAppProps, IAppState>
         const timer = new Timer();
 
         const buffer = await fetchAudioBuffer("notrack/ryan.wav");
-        console.log(buffer);
+        console.log(buffer, absMeanSample(buffer.getChannelData(0), 1), rmsSample(buffer.getChannelData(0), 1));
     
         const audioContext = new AudioContext();
         const bufferSource = audioContext.createBufferSource();
@@ -61,7 +63,7 @@ class App extends React.Component<IAppProps, IAppState>
     
         const compressor = audioContext.createDynamicsCompressor();
         compressor.threshold.value = this.state.compressor.threshold;
-        compressor.knee.value = 40;
+        compressor.knee.value = this.state.compressor.knee;
         compressor.ratio.value = this.state.compressor.ratio;
         compressor.attack.value = 0;
         compressor.release.value = 0.25;
@@ -86,7 +88,7 @@ class App extends React.Component<IAppProps, IAppState>
             const effectsBuffer = await renderEffectsChain(this.state.audioBuffer!, (ctx, buf) => {
                 const compressor = ctx.createDynamicsCompressor();
                 compressor.threshold.value = this.state.compressor.threshold;
-                compressor.knee.value = 40;
+                compressor.knee.value = this.state.compressor.knee;
                 compressor.ratio.value = this.state.compressor.ratio;
                 compressor.attack.value = 0;
                 compressor.release.value = 0.25;
@@ -101,6 +103,7 @@ class App extends React.Component<IAppProps, IAppState>
                     // TODO
                     const linearThreshold = gainToLinear(this.state.compressor.threshold);
                     const linearKnee = gainToLinear(this.state.compressor.ratio);
+                    console.log(`threshold: ${linearThreshold}; knee: ${linearKnee}`)
                     if (input < linearThreshold) {
                         return input;
                     } else if (input < linearThreshold + linearKnee) {
@@ -111,8 +114,9 @@ class App extends React.Component<IAppProps, IAppState>
                         return (1 / this.state.compressor.ratio) * input;
                     }
                 };
+                console.log(compressionCurve(0.0), compressionCurve(0.03), compressionCurve(0.3))
                 const fullMakeupGain = 1 / compressionCurve(1.0);
-                const makeupGain = 0.6 * fullMakeupGain;
+                const makeupGain = Math.pow(fullMakeupGain, 0.6);
                 const invertMakeupGain = 1 / makeupGain;
                 gain.gain.value = invertMakeupGain;
 
@@ -177,13 +181,13 @@ class App extends React.Component<IAppProps, IAppState>
                 <legend>Controls</legend>
 
                 <p>threshold</p>
-                <button onClick={() => this.setState({ compressor: { threshold: -90, ratio: this.state.compressor.ratio } })}>-90</button>
-                <button onClick={() => this.setState({ compressor: { threshold: -50, ratio: this.state.compressor.ratio } })}>-50</button>
-                <button onClick={() => this.setState({ compressor: { threshold: -10, ratio: this.state.compressor.ratio } })}>-10</button>
+                <button onClick={() => this.setState({ compressor: { threshold: -90, ratio: this.state.compressor.ratio, knee: this.state.compressor.knee } })}>-90</button>
+                <button onClick={() => this.setState({ compressor: { threshold: -50, ratio: this.state.compressor.ratio, knee: this.state.compressor.knee } })}>-50</button>
+                <button onClick={() => this.setState({ compressor: { threshold: -10, ratio: this.state.compressor.ratio, knee: this.state.compressor.knee } })}>-10</button>
                 <p>ratio</p>
-                <button onClick={() => this.setState({ compressor: { threshold: this.state.compressor.threshold, ratio: 20 } })}>20</button>
-                <button onClick={() => this.setState({ compressor: { threshold: this.state.compressor.threshold, ratio: 12 } })}>12</button>
-                <button onClick={() => this.setState({ compressor: { threshold: this.state.compressor.threshold, ratio: 2 } })}>2</button>
+                <button onClick={() => this.setState({ compressor: { threshold: this.state.compressor.threshold, ratio: 20, knee: this.state.compressor.knee } })}>20</button>
+                <button onClick={() => this.setState({ compressor: { threshold: this.state.compressor.threshold, ratio: 12, knee: this.state.compressor.knee } })}>12</button>
+                <button onClick={() => this.setState({ compressor: { threshold: this.state.compressor.threshold, ratio: 2, knee: this.state.compressor.knee } })}>2</button>
                 <p>knee</p>
 
                 <p>attack</p>
