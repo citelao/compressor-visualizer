@@ -141,6 +141,7 @@ class App extends React.Component<IAppProps, IAppState>
         const samples = this.state.samples;
         const WAVEFORM_WIDTH = 1000;
 
+        const calcTimer = new Timer();
         let maxWaveform;
         let meanWaveform;
         let rmsWaveform;
@@ -159,9 +160,14 @@ class App extends React.Component<IAppProps, IAppState>
             transformedMeanWaveform = absMeanSample(transformedData, samples);
             transformedRmsWaveform = rmsSample(transformedData, samples);
         }
+        const calculationTime = calcTimer.stop();
 
         return <>
             <h1>Compressor Visualizer</h1>
+
+            <ul>
+                <li>Analysis time: {calculationTime}ms</li>
+            </ul>
 
             {/* TODO: allow uploading */}
             {/* <audio controls
