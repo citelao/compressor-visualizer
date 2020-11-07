@@ -209,6 +209,15 @@ class App extends React.Component<IAppProps, IAppState>
                 </label>
 
                 <p>threshold</p>
+                <label>
+                    threshold
+                    <input type="number"
+                        value={this.state.compressor.threshold}
+                        min={-100}
+                        max={0}
+                        step={5}
+                        onChange={(e) => this.setState({ compressor: getUpdatedCompressorSettings({ threshold: e.target.valueAsNumber }) })} />
+                </label>
                 <button onClick={() => this.setState({ compressor: getUpdatedCompressorSettings({ threshold: -90 }) })}>-90</button>
                 <button onClick={() => this.setState({ compressor: getUpdatedCompressorSettings({ threshold: -50 }) })}>-50</button>
                 <button onClick={() => this.setState({ compressor: getUpdatedCompressorSettings({ threshold: -10 }) })}>-10</button>
