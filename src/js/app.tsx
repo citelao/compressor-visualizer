@@ -18,7 +18,9 @@ interface IAppState {
         threshold: number,
         ratio: number,
         knee: number,
-    }
+    },
+
+    samples: number
 }
 
 class App extends React.Component<IAppProps, IAppState>
@@ -42,7 +44,9 @@ class App extends React.Component<IAppProps, IAppState>
                 threshold: -50,
                 ratio: 2,
                 knee: 0,
-            }
+            },
+
+            samples: 500
         };
     }
 
@@ -134,16 +138,16 @@ class App extends React.Component<IAppProps, IAppState>
 
     public render() {
         const channelData = this.state.audioBuffer?.getChannelData(0);
-        const SAMPLES = 1000;
+        const samples = this.state.samples;
         const WAVEFORM_WIDTH = 1000;
 
         let maxWaveform;
         let meanWaveform;
         let rmsWaveform;
         if (channelData) {
-            maxWaveform = absMaxSample(channelData, SAMPLES);
-            meanWaveform = absMeanSample(channelData, SAMPLES);
-            rmsWaveform = rmsSample(channelData, SAMPLES);
+            maxWaveform = absMaxSample(channelData, samples);
+            meanWaveform = absMeanSample(channelData, samples);
+            rmsWaveform = rmsSample(channelData, samples);
         }
 
         const transformedData = this.state.transformedBuffer?.getChannelData(0);
@@ -151,9 +155,9 @@ class App extends React.Component<IAppProps, IAppState>
         let transformedMeanWaveform;
         let transformedRmsWaveform;
         if (transformedData) {
-            transformedMaxWaveform = absMaxSample(transformedData, SAMPLES);
-            transformedMeanWaveform = absMeanSample(transformedData, SAMPLES);
-            transformedRmsWaveform = rmsSample(transformedData, SAMPLES);
+            transformedMaxWaveform = absMaxSample(transformedData, samples);
+            transformedMeanWaveform = absMeanSample(transformedData, samples);
+            transformedRmsWaveform = rmsSample(transformedData, samples);
         }
 
         return <>
@@ -181,6 +185,11 @@ class App extends React.Component<IAppProps, IAppState>
             <fieldset>
                 <legend>Controls</legend>
 
+                <label>
+                    View resolution
+                    <input type="range" onChange={this.handleResolutionChange} value={samples} min={1} max={WAVEFORM_WIDTH} />
+                </label>
+
                 <p>threshold</p>
                 <button onClick={() => this.setState({ compressor: { threshold: -90, ratio: this.state.compressor.ratio, knee: this.state.compressor.knee } })}>-90</button>
                 <button onClick={() => this.setState({ compressor: { threshold: -50, ratio: this.state.compressor.ratio, knee: this.state.compressor.knee } })}>-50</button>
@@ -196,6 +205,14 @@ class App extends React.Component<IAppProps, IAppState>
                 <p>gain</p>
             </fieldset>
         </>;
+    }
+    
+    private handleResolutionChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const resolution = e.target.valueAsNumber;
+
+        this.setState({
+            samples: resolution
+        });
     }
 
     private handlePlayOriginal = () => {
