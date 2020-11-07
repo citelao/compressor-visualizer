@@ -9,6 +9,7 @@ interface IAppState {
     audioBufferSourceNode: AudioBufferSourceNode | null,
     audioContext: AudioContext | null,
     audioBuffer: AudioBuffer | null,
+    audioLoadTimeMs: number,
 
     transformedBuffer: AudioBuffer | null,
     transformedRenderTimeMs: number,
@@ -30,6 +31,7 @@ class App extends React.Component<IAppProps, IAppState>
             audioBufferSourceNode: null,
             audioContext: null,
             audioBuffer: null,
+            audioLoadTimeMs: 0,
 
             transformedBuffer: null,
             transformedRenderTimeMs: 0,
@@ -45,6 +47,8 @@ class App extends React.Component<IAppProps, IAppState>
         // if (!this.audioRef || !this.audioRef.current) {
         //     throw new Error("Expected an audio ref");
         // }
+
+        const timer = new Timer();
 
         const buffer = await fetchAudioBuffer("notrack/ryan.wav");
         console.log(buffer);
@@ -66,7 +70,8 @@ class App extends React.Component<IAppProps, IAppState>
         this.setState({
             audioBuffer: buffer,
             audioBufferSourceNode: bufferSource,
-            audioContext: audioContext
+            audioContext: audioContext,
+            audioLoadTimeMs: timer.stop()
         });
     }
 
@@ -88,7 +93,7 @@ class App extends React.Component<IAppProps, IAppState>
 
             this.setState({
                 transformedBuffer: effectsBuffer,
-                transformedRenderTimeMs: timer.stop();
+                transformedRenderTimeMs: timer.stop()
             });
         }
     }
@@ -127,12 +132,12 @@ class App extends React.Component<IAppProps, IAppState>
                 Your browser does not support the audio element :(.
             </audio> */}
             <button onClick={this.handlePlay}>Play Audio Context</button>
-            <p>Original ({this.state.audioBuffer?.length})</p>
+            <p>Original (length {this.state.audioBuffer?.length}; load: {this.state.audioLoadTimeMs}ms)</p>
             {(maxWaveform && meanWaveform && rmsWaveform)
                 ? <Waveform width={WAVEFORM_WIDTH} numbers={[maxWaveform, meanWaveform, rmsWaveform]} />
                 : null
             }
-            <p>Modified ({this.state.transformedRenderTimeMs}ms):</p>
+            <p>Modified (load: {this.state.transformedRenderTimeMs}ms):</p>
             {(transformedMaxWaveform && transformedMeanWaveform && transformedRmsWaveform)
                 ? <Waveform width={WAVEFORM_WIDTH} numbers={[transformedMaxWaveform, transformedMeanWaveform, transformedRmsWaveform]} />
                 : null
