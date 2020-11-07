@@ -165,12 +165,13 @@ class App extends React.Component<IAppProps, IAppState>
                 ref={this.audioRef}>
                 Your browser does not support the audio element :(.
             </audio> */}
-            <button onClick={this.handlePlay}>Play Audio Context</button>
+            <button onClick={this.handlePlayOriginal}>Play original</button>
             <p>Original (length {this.state.audioBuffer?.length}; load: {this.state.audioLoadTimeMs}ms)</p>
             {(maxWaveform && meanWaveform && rmsWaveform)
                 ? <Waveform width={WAVEFORM_WIDTH} numbers={[maxWaveform, meanWaveform, rmsWaveform]} />
                 : null
             }
+            <button onClick={this.handlePlayModified}>Play modified</button>
             <p>Modified (load: {this.state.transformedRenderTimeMs}ms):</p>
             {(transformedMaxWaveform && transformedMeanWaveform && transformedRmsWaveform)
                 ? <Waveform width={WAVEFORM_WIDTH} numbers={[transformedMaxWaveform, transformedMeanWaveform, transformedRmsWaveform]} />
@@ -197,7 +198,7 @@ class App extends React.Component<IAppProps, IAppState>
         </>;
     }
 
-    private handlePlay = () => {
+    private handlePlayOriginal = () => {
         if (!this.state.audioContext || !this.state.audioBufferSourceNode) {
             throw new Error("You need an audio context");
         }
@@ -207,6 +208,22 @@ class App extends React.Component<IAppProps, IAppState>
         // }
 
         this.state.audioBufferSourceNode.start();
+    }
+
+    private handlePlayModified = () => {
+        if (!this.state.audioContext || !this.state.transformedBuffer) {
+            throw new Error("You need an audio context and transformed buffer");
+        }
+
+        // if (this.state.audioContext.state === "suspended") {
+        //     this.state.audioContext.resume();
+        // }
+
+        const bufferNode = this.state.audioContext.createBufferSource();
+        bufferNode.buffer = this.state.transformedBuffer;
+        bufferNode.connect(this.state.audioContext.destination);
+
+        bufferNode.start();
     }
 }
 
