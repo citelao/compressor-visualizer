@@ -65,21 +65,27 @@ class App extends React.Component<IAppProps, IAppState>
             audioBufferSourceNode: bufferSource,
             audioContext: audioContext
         });
+    }
 
-        const effectsBuffer = await renderEffectsChain(this.state.audioBuffer!, (ctx, buf) => {
-            const compressor = ctx.createDynamicsCompressor();
-            compressor.threshold.value = this.state.compressor.threshold;
-            compressor.knee.value = 40;
-            compressor.ratio.value = 12;
-            compressor.attack.value = 0;
-            compressor.release.value = 0.25;
+    public async componentDidUpdate(prevProps: IAppProps, prevState: IAppState) {
+        const hasRenderedTransform = !!this.state.transformedBuffer;
+        const thresholdChanged = this.state.compressor.threshold != prevState.compressor.threshold;
+        if (!hasRenderedTransform || thresholdChanged) {
+            const effectsBuffer = await renderEffectsChain(this.state.audioBuffer!, (ctx, buf) => {
+                const compressor = ctx.createDynamicsCompressor();
+                compressor.threshold.value = this.state.compressor.threshold;
+                compressor.knee.value = 40;
+                compressor.ratio.value = 12;
+                compressor.attack.value = 0;
+                compressor.release.value = 0.25;
 
-            return buf.connect(compressor);
-        });
+                return buf.connect(compressor);
+            });
 
-        this.setState({
-            transformedBuffer: effectsBuffer
-        });
+            this.setState({
+                transformedBuffer: effectsBuffer
+            });
+        }
     }
 
     public render() {
