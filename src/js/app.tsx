@@ -15,7 +15,8 @@ interface IAppState {
     transformedRenderTimeMs: number,
 
     compressor: {
-        threshold: number
+        threshold: number,
+        ratio: number,
     }
 }
 
@@ -37,7 +38,8 @@ class App extends React.Component<IAppProps, IAppState>
             transformedRenderTimeMs: 0,
 
             compressor: {
-                threshold: -50
+                threshold: -50,
+                ratio: 2,
             }
         };
     }
@@ -60,7 +62,7 @@ class App extends React.Component<IAppProps, IAppState>
         const compressor = audioContext.createDynamicsCompressor();
         compressor.threshold.value = this.state.compressor.threshold;
         compressor.knee.value = 40;
-        compressor.ratio.value = 12;
+        compressor.ratio.value = this.state.compressor.ratio;
         compressor.attack.value = 0;
         compressor.release.value = 0.25;
 
@@ -78,13 +80,14 @@ class App extends React.Component<IAppProps, IAppState>
     public async componentDidUpdate(prevProps: IAppProps, prevState: IAppState) {
         const hasRenderedTransform = !!this.state.transformedBuffer;
         const thresholdChanged = this.state.compressor.threshold != prevState.compressor.threshold;
-        if (!hasRenderedTransform || thresholdChanged) {
+        const ratioChanged = this.state.compressor.ratio != prevState.compressor.ratio;
+        if (!hasRenderedTransform || thresholdChanged || ratioChanged) {
             const timer = new Timer();
             const effectsBuffer = await renderEffectsChain(this.state.audioBuffer!, (ctx, buf) => {
                 const compressor = ctx.createDynamicsCompressor();
                 compressor.threshold.value = this.state.compressor.threshold;
                 compressor.knee.value = 40;
-                compressor.ratio.value = 12;
+                compressor.ratio.value = this.state.compressor.ratio;
                 compressor.attack.value = 0;
                 compressor.release.value = 0.25;
 
@@ -147,10 +150,13 @@ class App extends React.Component<IAppProps, IAppState>
                 <legend>Controls</legend>
 
                 <p>threshold</p>
-                <button onClick={() => this.setState({ compressor: { threshold: -90} })}>-90</button>
-                <button onClick={() => this.setState({ compressor: { threshold: -50} })}>-50</button>
-                <button onClick={() => this.setState({ compressor: { threshold: -10} })}>-10</button>
+                <button onClick={() => this.setState({ compressor: { threshold: -90, ratio: this.state.compressor.ratio } })}>-90</button>
+                <button onClick={() => this.setState({ compressor: { threshold: -50, ratio: this.state.compressor.ratio } })}>-50</button>
+                <button onClick={() => this.setState({ compressor: { threshold: -10, ratio: this.state.compressor.ratio } })}>-10</button>
                 <p>ratio</p>
+                <button onClick={() => this.setState({ compressor: { threshold: this.state.compressor.threshold, ratio: 20 } })}>20</button>
+                <button onClick={() => this.setState({ compressor: { threshold: this.state.compressor.threshold, ratio: 12 } })}>12</button>
+                <button onClick={() => this.setState({ compressor: { threshold: this.state.compressor.threshold, ratio: 2 } })}>2</button>
                 <p>knee</p>
 
                 <p>attack</p>
