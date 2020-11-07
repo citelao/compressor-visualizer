@@ -111,12 +111,12 @@ class App extends React.Component<IAppProps, IAppState>
                         return (1 / this.state.compressor.ratio) * input;
                     }
                 };
-                const fullMakeupGain = compressionCurve(1.0);
+                const fullMakeupGain = 1 / compressionCurve(1.0);
                 const makeupGain = 0.6 * fullMakeupGain;
                 const invertMakeupGain = 1 / makeupGain;
                 gain.gain.value = invertMakeupGain;
 
-                console.log(fullMakeupGain, makeupGain, invertMakeupGain);
+                console.log(`Makeup gain: ${makeupGain} (full: ${fullMakeupGain}), Applied: ${invertMakeupGain}`);
 
                 return buf.connect(compressor).connect(gain);
             });
