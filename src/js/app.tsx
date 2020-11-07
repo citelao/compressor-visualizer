@@ -1,5 +1,6 @@
 import React from "react";
 import ReactDOM from "react-dom";
+import Timer from "./timer";
 import Waveform from "./Waveform";
 
 interface IAppProps {}
@@ -10,6 +11,7 @@ interface IAppState {
     audioBuffer: AudioBuffer | null,
 
     transformedBuffer: AudioBuffer | null,
+    transformedRenderTimeMs: number,
 
     compressor: {
         threshold: number
@@ -30,6 +32,7 @@ class App extends React.Component<IAppProps, IAppState>
             audioBuffer: null,
 
             transformedBuffer: null,
+            transformedRenderTimeMs: 0,
 
             compressor: {
                 threshold: -50
@@ -71,6 +74,7 @@ class App extends React.Component<IAppProps, IAppState>
         const hasRenderedTransform = !!this.state.transformedBuffer;
         const thresholdChanged = this.state.compressor.threshold != prevState.compressor.threshold;
         if (!hasRenderedTransform || thresholdChanged) {
+            const timer = new Timer();
             const effectsBuffer = await renderEffectsChain(this.state.audioBuffer!, (ctx, buf) => {
                 const compressor = ctx.createDynamicsCompressor();
                 compressor.threshold.value = this.state.compressor.threshold;
@@ -83,7 +87,8 @@ class App extends React.Component<IAppProps, IAppState>
             });
 
             this.setState({
-                transformedBuffer: effectsBuffer
+                transformedBuffer: effectsBuffer,
+                transformedRenderTimeMs: timer.stop();
             });
         }
     }
@@ -127,7 +132,7 @@ class App extends React.Component<IAppProps, IAppState>
                 ? <Waveform width={WAVEFORM_WIDTH} numbers={[maxWaveform, meanWaveform, rmsWaveform]} />
                 : null
             }
-            <p>Modified:</p>
+            <p>Modified ({this.state.transformedRenderTimeMs}ms):</p>
             {(transformedMaxWaveform && transformedMeanWaveform && transformedRmsWaveform)
                 ? <Waveform width={WAVEFORM_WIDTH} numbers={[transformedMaxWaveform, transformedMeanWaveform, transformedRmsWaveform]} />
                 : null
