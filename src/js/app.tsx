@@ -94,10 +94,13 @@ class App extends React.Component<IAppProps, IAppState>
                 const gain = ctx.createGain();
                 // https://www.w3.org/TR/webaudio/#compression-curve
                 // https://www.w3.org/TR/webaudio/#computing-the-makeup-gain
+                const gainToLinear = (decibel: number) => {
+                    return Math.pow(10, (decibel / 20));
+                }
                 const compressionCurve = (input: number) => {
                     // TODO
-                    const linearThreshold = this.state.compressor.threshold;
-                    const linearKnee = this.state.compressor.ratio;
+                    const linearThreshold = gainToLinear(this.state.compressor.threshold);
+                    const linearKnee = gainToLinear(this.state.compressor.ratio);
                     if (input < linearThreshold) {
                         return input;
                     } else if (input < linearThreshold + linearKnee) {
