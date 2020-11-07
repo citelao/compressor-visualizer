@@ -137,6 +137,9 @@ class App extends React.Component<IAppProps, IAppState>
                 <legend>Controls</legend>
 
                 <p>threshold</p>
+                <button onClick={() => this.setState({ compressor: { threshold: -90} })}>-90</button>
+                <button onClick={() => this.setState({ compressor: { threshold: -50} })}>-50</button>
+                <button onClick={() => this.setState({ compressor: { threshold: -10} })}>-10</button>
                 <p>ratio</p>
                 <p>knee</p>
 
