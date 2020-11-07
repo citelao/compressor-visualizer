@@ -10,6 +10,7 @@ interface ICompressorSettings {
     ratio: number,
     knee: number,
     attack: number,
+    release: number,
 }
 
 interface IAppState {
@@ -47,7 +48,8 @@ class App extends React.Component<IAppProps, IAppState>
                 threshold: -50,
                 ratio: 2,
                 knee: 0,
-                attack: 0
+                attack: .003,
+                release: .25
             },
 
             samples: 500
@@ -74,7 +76,7 @@ class App extends React.Component<IAppProps, IAppState>
         compressor.knee.value = this.state.compressor.knee;
         compressor.ratio.value = this.state.compressor.ratio;
         compressor.attack.value = this.state.compressor.attack;
-        compressor.release.value = 0.25;
+        compressor.release.value = this.state.compressor.release;
 
         bufferSource.connect(audioContext.destination);
         // bufferSource.connect(compressor).connect(audioContext.destination);
@@ -92,7 +94,8 @@ class App extends React.Component<IAppProps, IAppState>
         const thresholdChanged = this.state.compressor.threshold != prevState.compressor.threshold;
         const ratioChanged = this.state.compressor.ratio != prevState.compressor.ratio;
         const attackChanged = this.state.compressor.attack != prevState.compressor.attack;
-        if (!hasRenderedTransform || thresholdChanged || ratioChanged || attackChanged) {
+        const releaseChanged = this.state.compressor.release != prevState.compressor.release;
+        if (!hasRenderedTransform || thresholdChanged || ratioChanged || attackChanged || releaseChanged) {
             const timer = new Timer();
             const effectsBuffer = await renderEffectsChain(this.state.audioBuffer!, (ctx, buf) => {
                 const compressor = ctx.createDynamicsCompressor();
@@ -100,7 +103,7 @@ class App extends React.Component<IAppProps, IAppState>
                 compressor.knee.value = this.state.compressor.knee;
                 compressor.ratio.value = this.state.compressor.ratio;
                 compressor.attack.value = this.state.compressor.attack;
-                compressor.release.value = 0.25;
+                compressor.release.value = this.state.compressor.release;
 
                 const gain = ctx.createGain();
                 // https://www.w3.org/TR/webaudio/#compression-curve
@@ -225,7 +228,16 @@ class App extends React.Component<IAppProps, IAppState>
                         onChange={(e) => this.setState({ compressor: getUpdatedCompressorSettings({ attack: e.target.valueAsNumber }) })} />
                 </label>
 
-                <p>release</p>
+                <label>
+                    release
+                    <input type="number"
+                        value={this.state.compressor.release}
+                        min={0}
+                        max={1}
+                        step={0.1}
+                        onChange={(e) => this.setState({ compressor: getUpdatedCompressorSettings({ release: e.target.valueAsNumber }) })} />
+                </label>
+                
                 <p>gain</p>
             </fieldset>
         </>;
