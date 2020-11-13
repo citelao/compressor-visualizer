@@ -285,8 +285,9 @@ class App extends React.Component<IAppProps, IAppState>
         }
 
         if (this.state.audioSound.isPlaying()) {
-            this.state.audioSound.stop();
+            this.state.audioSound.pause();
         } else {
+            console.log(this.state.audioSound.getElapsedMs());
             this.state.transformedSound?.stop();
             this.state.audioSound.start();
         }
