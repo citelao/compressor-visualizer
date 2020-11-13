@@ -196,13 +196,27 @@ class App extends React.Component<IAppProps, IAppState>
                 ref={this.audioRef}>
                 Your browser does not support the audio element :(.
             </audio> */}
-            <button onClick={this.handlePlayOriginal}>Play original</button>
+            <button onClick={this.handlePlayOriginal}>
+                {this.state.audioSound?.isPlaying() 
+                    ? "Pause original"
+                    : (this.state.transformedSound?.isPlaying())
+                        ? "Switch to original"
+                        : "Play original"
+                }
+            </button>
             <p>Original (length {this.state.audioBuffer?.length}; load: {this.state.audioLoadTimeMs}ms)</p>
             {(maxWaveform && meanWaveform && rmsWaveform)
                 ? <Waveform width={WAVEFORM_WIDTH} numbers={[maxWaveform, meanWaveform, rmsWaveform]} />
                 : null
             }
-            <button onClick={this.handlePlayModified}>Play modified</button>
+            <button onClick={this.handlePlayModified}>
+                {this.state.transformedSound?.isPlaying() 
+                    ? "Pause transformed"
+                    : (this.state.audioSound?.isPlaying())
+                        ? "Switch to transformed"
+                        : "Play transformed"
+                }
+            </button>
             <p>Modified (load: {this.state.transformedRenderTimeMs}ms):</p>
             {(transformedMaxWaveform && transformedMeanWaveform && transformedRmsWaveform)
                 ? <Waveform width={WAVEFORM_WIDTH} numbers={[transformedMaxWaveform, transformedMeanWaveform, transformedRmsWaveform]} />
@@ -285,11 +299,18 @@ class App extends React.Component<IAppProps, IAppState>
         }
 
         if (this.state.audioSound.isPlaying()) {
+            console.log("Pausing original!");
             this.state.audioSound.pause();
         } else {
-            console.log(this.state.audioSound.getElapsedMs());
-            this.state.transformedSound?.stop();
-            this.state.audioSound.play();
+            if (this.state.transformedSound?.isPlaying()) {
+                console.log("Switching to original");
+                const transformedElapsedMs = this.state.transformedSound?.getElapsedMs() || 0;
+                this.state.transformedSound?.stop();
+                this.state.audioSound.start(0, transformedElapsedMs / 1000);
+            } else {
+                console.log("Resuming original");
+                this.state.audioSound.play();
+            }
         }
     }
 
@@ -303,11 +324,21 @@ class App extends React.Component<IAppProps, IAppState>
         // }
 
         if (this.state.transformedSound?.isPlaying()) {
+            console.log("Pausing transformed!");
             this.state.transformedSound.pause();
         } else {
             const sound = new Sound(this.state.audioContext, this.state.transformedBuffer);
-            this.state.audioSound?.stop();
-            sound.start();
+
+            if (this.state.audioSound?.isPlaying()) {
+                console.log("Switching to transformed");
+                const audioElapsedMs = this.state.audioSound?.getElapsedMs() || 0;
+                this.state.audioSound?.stop();
+                sound.start(0, audioElapsedMs / 1000);
+            } else {
+                console.log("Resuming transformed");
+                const elapsedMs = this.state.transformedSound?.getElapsedMs() || 0;
+                sound.start(0, elapsedMs / 1000);
+            }
 
             this.setState({
                 transformedSound: sound
