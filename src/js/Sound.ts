@@ -56,10 +56,12 @@ export default class Sound {
         const bufferNode = this.context.createBufferSource();
         bufferNode.buffer = this.buffer;
         bufferNode.connect(this.context.destination);
+        bufferNode.addEventListener("ended", this.handleEnded);
         bufferNode.start(when, offsetS);
 
         this.timer = new ElapsedTimer(offsetS * 1000);
         this.node = bufferNode;
+
     }
 
     public play() {
@@ -69,11 +71,13 @@ export default class Sound {
     }
 
     public pause() {
+        this.node?.removeEventListener("ended", this.handleEnded);
         this.node?.stop();
         this.timer?.pause();
     }
 
     public stop() {
+        this.node?.removeEventListener("ended", this.handleEnded);
         this.node?.stop();
         this.node = null;
         this.timer = null;
@@ -85,5 +89,9 @@ export default class Sound {
 
     public getElapsedMs(): number {
         return this.timer?.getElapsedMs() || 0;
+    }
+
+    private handleEnded = () => {
+        this.timer = null;
     }
 }
