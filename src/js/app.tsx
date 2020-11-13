@@ -354,20 +354,18 @@ async function fetchAudioBuffer(uri: string): Promise<AudioBuffer> {
     return new Promise<AudioBuffer>((resolve, reject) => {
         try {
             // https://developer.mozilla.org/en-US/docs/Web/API/OfflineAudioContext
-            const CHANNELS = 2;
-            const SAMPLE_RATE = 44100;
-            const LENGTH_S = 40;
-            const SAMPLE_COUNT = SAMPLE_RATE * LENGTH_S;
-            const audioContext = new AudioContext();
-            const offlineContext = new OfflineAudioContext(CHANNELS, SAMPLE_COUNT, SAMPLE_RATE);
             const request = new XMLHttpRequest();
-            const bufferSource = offlineContext.createBufferSource();
             request.open("GET", uri, true);
             request.responseType = "arraybuffer";
             request.onload = function() {
                 const audioData = request.response;
-                
+
+                const audioContext = new AudioContext();
                 audioContext.decodeAudioData(audioData, function(decodedData) {
+                    console.log(`Audio data: ${decodedData.numberOfChannels} channels; ${decodedData.length} @ ${decodedData.sampleRate}Hz`);
+                    const offlineContext = new OfflineAudioContext(decodedData.numberOfChannels, decodedData.length, decodedData.sampleRate);
+                    const bufferSource = offlineContext.createBufferSource();
+                    
                     bufferSource.buffer = decodedData;
                     bufferSource.connect(offlineContext.destination);
                     bufferSource.start();
