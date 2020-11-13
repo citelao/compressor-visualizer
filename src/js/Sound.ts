@@ -2,8 +2,9 @@ class ElapsedTimer {
     private startTime: Date | null;
     private offsetMs: number = 0;
 
-    constructor() {
+    constructor(offsetMs: number = 0) {
         this.startTime = new Date();
+        this.offsetMs = offsetMs;
     }
 
     public getElapsedMs(): number {
@@ -24,6 +25,7 @@ class ElapsedTimer {
         }
 
         const ms = (new Date()).getTime() - this.startTime.getTime();
+        console.log(ms, this.offsetMs);
         this.offsetMs += ms;
 
         this.startTime = null;
@@ -50,20 +52,20 @@ export default class Sound {
         this.buffer = buffer;
     }
 
-    public start() {
+    public start(when: number = 0, offsetS: number = 0) {
         const bufferNode = this.context.createBufferSource();
         bufferNode.buffer = this.buffer;
         bufferNode.connect(this.context.destination);
+        bufferNode.start(when, offsetS);
 
-        if (this.node) {
-            bufferNode.start(0, (this.timer?.getElapsedMs() || 0) / 1000);
-            this.timer?.resume();
-        } else {
-            bufferNode.start();
-            this.timer = new ElapsedTimer();
-        }
-
+        this.timer = new ElapsedTimer(offsetS * 1000);
         this.node = bufferNode;
+    }
+
+    public play() {
+        const elapsedS = (this.timer?.getElapsedMs() || 0) / 1000;
+
+        this.start(0, elapsedS);
     }
 
     public pause() {

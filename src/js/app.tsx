@@ -289,7 +289,7 @@ class App extends React.Component<IAppProps, IAppState>
         } else {
             console.log(this.state.audioSound.getElapsedMs());
             this.state.transformedSound?.stop();
-            this.state.audioSound.start();
+            this.state.audioSound.play();
         }
     }
 
