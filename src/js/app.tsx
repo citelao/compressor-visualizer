@@ -303,7 +303,7 @@ class App extends React.Component<IAppProps, IAppState>
         // }
 
         if (this.state.transformedSound?.isPlaying()) {
-            this.state.transformedSound.stop();
+            this.state.transformedSound.pause();
         } else {
             const sound = new Sound(this.state.audioContext, this.state.transformedBuffer);
             this.state.audioSound?.stop();
