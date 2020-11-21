@@ -1,5 +1,6 @@
 import React from "react";
 import ReactDOM from "react-dom";
+import Db from "./Db";
 
 interface IWaveformProps {
     numbers: Float32Array[];
@@ -15,7 +16,19 @@ export default class Waveform extends React.Component<IWaveformProps, IWaveformS
 {
     public render() {
         const width = this.props.width;
+        const SCALE_DB = [0, -10, -50, -90];
+        // const SCALE_LINEAR_PTS = [0, 0.5, 1];
+        
         return <svg width={width} height={HEIGHT}>
+            {/* Scale */}
+            {SCALE_DB.map((db) => {
+                const linear = Db.dbToLinear(db);
+                const y = Waveform.linearToHeight(linear);
+                console.log(`Db: ${db} => ${linear} => ${y}px`);
+                return <line x1={0} x2={5} y1={y} y2={y} stroke="black" />;
+            })}
+
+            {/* Waveform */}
             {this.props.numbers.map((wave) => {
                 const stepWidth = Math.max(1, width / wave.length);
                 return <polygon

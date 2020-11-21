@@ -1,5 +1,6 @@
 import React from "react";
 import ReactDOM from "react-dom";
+import Db from "./Db";
 import Sound from "./Sound";
 import Timer from "./timer";
 import Waveform from "./Waveform";
@@ -118,15 +119,10 @@ class App extends React.Component<IAppProps, IAppState>
                 compressor.release.value = this.state.compressor.release;
 
                 const gain = ctx.createGain();
-                // https://www.w3.org/TR/webaudio/#compression-curve
-                // https://www.w3.org/TR/webaudio/#computing-the-makeup-gain
-                const gainToLinear = (decibel: number) => {
-                    return Math.pow(10, (decibel / 20));
-                }
                 const compressionCurve = (input: number) => {
                     // TODO
-                    const linearThreshold = gainToLinear(this.state.compressor.threshold);
-                    const linearKneeEnd = gainToLinear(this.state.compressor.threshold + this.state.compressor.knee);
+                    const linearThreshold = Db.dbToLinear(this.state.compressor.threshold);
+                    const linearKneeEnd =  Db.dbToLinear(this.state.compressor.threshold + this.state.compressor.knee);
                     console.log(`threshold: ${linearThreshold}; knee end: ${linearKneeEnd}`)
                     if (input < linearThreshold) {
                         return input;
