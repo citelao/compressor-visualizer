@@ -13,12 +13,13 @@ export default class Waveform extends React.Component<IWaveformProps, IWaveformS
 {
     public render() {
         const width = this.props.width;
-        return <svg width={width}>
+        const height = 300;
+        return <svg width={width} height={height}>
             {this.props.numbers.map((wavePts) => {
                 const rectWidth = Math.max(1, width / wavePts.length);
                 return Array.from(wavePts).map((v, i) => {
-                    const height = Math.abs(v) * 300;
-                    return <rect key={i} x={i * rectWidth} width={rectWidth} height={height} opacity={1 / this.props.numbers.length} color="black" />;
+                    const rectHeight = Math.abs(v) * height; // v is within (-1, 1)
+                    return <rect key={i} x={i * rectWidth} width={rectWidth} height={rectHeight} opacity={1 / this.props.numbers.length} color="black" />;
                 });
             })}
         </svg>;

@@ -400,7 +400,7 @@ async function fetchAudioBuffer(uri: string): Promise<AudioBuffer> {
 }
 
 function getGroupSize(length: number, samples: number): number {
-    const groupSize = Math.floor(length / samples);
+    const groupSize = Math.max(Math.floor(length / samples), 1);
     return groupSize;
 }
 
