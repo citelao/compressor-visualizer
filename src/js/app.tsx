@@ -164,6 +164,12 @@ class App extends React.Component<IAppProps, IAppState>
         const offset = 12000;
         const size = 500;
         console.log(`Group size: ${getGroupSize(size, samples)}`);
+        const viewWidthS = (this.state.audioBuffer)
+            ? size / this.state.audioBuffer.sampleRate
+            : 0;
+        const DIGITS = 3;
+        const truncatedViewWidthS = Math.trunc(viewWidthS * Math.pow(10, DIGITS)) / Math.pow(10, DIGITS);
+        console.log(`Viewing: ${truncatedViewWidthS}s`)
 
         const calcTimer = new Timer();
         let maxWaveform;
@@ -175,7 +181,7 @@ class App extends React.Component<IAppProps, IAppState>
             meanWaveform = absMeanSample(subpart, samples);
             rmsWaveform = rmsSample(subpart, samples);
 
-            console.log(subpart);
+            // console.log(subpart);
         }
 
         const transformedData = this.state.transformedBuffer?.getChannelData(0);
