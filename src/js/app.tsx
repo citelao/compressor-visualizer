@@ -161,14 +161,21 @@ class App extends React.Component<IAppProps, IAppState>
         const samples = this.state.samples;
         const WAVEFORM_WIDTH = 1000;
 
+        const offset = 12000;
+        const size = 500;
+        console.log(`Group size: ${getGroupSize(size, samples)}`);
+
         const calcTimer = new Timer();
         let maxWaveform;
         let meanWaveform;
         let rmsWaveform;
         if (channelData) {
-            maxWaveform = absMaxSample(channelData, samples);
-            meanWaveform = absMeanSample(channelData, samples);
-            rmsWaveform = rmsSample(channelData, samples);
+            const subpart = channelData.subarray(offset, offset + size);
+            maxWaveform = absMaxSample(subpart, samples);
+            meanWaveform = absMeanSample(subpart, samples);
+            rmsWaveform = rmsSample(subpart, samples);
+
+            console.log(subpart);
         }
 
         const transformedData = this.state.transformedBuffer?.getChannelData(0);
@@ -176,9 +183,10 @@ class App extends React.Component<IAppProps, IAppState>
         let transformedMeanWaveform;
         let transformedRmsWaveform;
         if (transformedData) {
-            transformedMaxWaveform = absMaxSample(transformedData, samples);
-            transformedMeanWaveform = absMeanSample(transformedData, samples);
-            transformedRmsWaveform = rmsSample(transformedData, samples);
+            const subpart = transformedData.subarray(offset, offset + size);
+            transformedMaxWaveform = absMaxSample(subpart, samples);
+            transformedMeanWaveform = absMeanSample(subpart, samples);
+            transformedRmsWaveform = rmsSample(subpart, samples);
         }
         const calculationTime = calcTimer.stop();
 
@@ -225,6 +233,11 @@ class App extends React.Component<IAppProps, IAppState>
                 ? <Waveform width={WAVEFORM_WIDTH} numbers={[transformedMaxWaveform, transformedMeanWaveform, transformedRmsWaveform]} />
                 : null
             }
+
+            <p>Small</p>
+            {(channelData)
+                ? <Waveform width={WAVEFORM_WIDTH} numbers={[channelData.subarray(1000, 1000 + WAVEFORM_WIDTH)]} />
+                : null}
 
             <fieldset>
                 <legend>Controls</legend>
@@ -386,10 +399,15 @@ async function fetchAudioBuffer(uri: string): Promise<AudioBuffer> {
     });
 }
 
+function getGroupSize(length: number, samples: number): number {
+    const groupSize = Math.floor(length / samples);
+    return groupSize;
+}
+
 function randomSample(arr: Float32Array, samples: number): Float32Array {
     const outputArray = new Float32Array(samples);
 
-    const groupSize = Math.floor(arr.length / samples);
+    const groupSize = getGroupSize(arr.length, samples);
     for (let index = 0; index < samples; index++) {
         const inputIndex = groupSize * index;
         outputArray[index] = arr[inputIndex];
@@ -401,7 +419,7 @@ function randomSample(arr: Float32Array, samples: number): Float32Array {
 function absMaxSample(arr: Float32Array, samples: number): Float32Array {
     const outputArray = new Float32Array(samples);
 
-    const groupSize = Math.floor(arr.length / samples);
+    const groupSize = getGroupSize(arr.length, samples);
     for (let index = 0; index < samples; index++) {
         const beginIndex = groupSize * index;
         const endIndex = groupSize * (index + 1);
@@ -416,7 +434,7 @@ function absMaxSample(arr: Float32Array, samples: number): Float32Array {
 function meanSample(arr: Float32Array, samples: number): Float32Array {
     const outputArray = new Float32Array(samples);
 
-    const groupSize = Math.floor(arr.length / samples);
+    const groupSize = getGroupSize(arr.length, samples);
     for (let index = 0; index < samples; index++) {
         const beginIndex = groupSize * index;
         const endIndex = groupSize * (index + 1);
@@ -431,7 +449,7 @@ function meanSample(arr: Float32Array, samples: number): Float32Array {
 function absMeanSample(arr: Float32Array, samples: number): Float32Array {
     const outputArray = new Float32Array(samples);
 
-    const groupSize = Math.floor(arr.length / samples);
+    const groupSize = getGroupSize(arr.length, samples);
     console.log(groupSize);
     for (let index = 0; index < samples; index++) {
         const beginIndex = groupSize * index;
@@ -448,7 +466,7 @@ function absMeanSample(arr: Float32Array, samples: number): Float32Array {
 function rmsSample(arr: Float32Array, samples: number): Float32Array {
     const outputArray = new Float32Array(samples);
 
-    const groupSize = Math.floor(arr.length / samples);
+    const groupSize = getGroupSize(arr.length, samples);
     for (let index = 0; index < samples; index++) {
         const beginIndex = groupSize * index;
         const endIndex = groupSize * (index + 1);
