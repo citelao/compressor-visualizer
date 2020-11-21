@@ -9,12 +9,13 @@ interface IWaveformProps {
 interface IWaveformState {
 }
 
+const HEIGHT = 300;
+
 export default class Waveform extends React.Component<IWaveformProps, IWaveformState>
 {
     public render() {
         const width = this.props.width;
-        const height = 300;
-        return <svg width={width} height={height}>
+        return <svg width={width} height={HEIGHT}>
             {this.props.numbers.map((wave) => {
                 const stepWidth = Math.max(1, width / wave.length);
                 return <polygon
@@ -23,10 +24,15 @@ export default class Waveform extends React.Component<IWaveformProps, IWaveformS
                     points={Array.from(wave).reduce<string>((acc, v, i) => {
                         // Create x,y pts for the wave:
                         const x = i * stepWidth;
-                        const y = Math.abs(v) * height;
+                        const y = Waveform.linearToHeight(v);
                         return acc + ` ${x},${y}`;
-                    }, "0,0") + ` ${width},0`} />;
+                    }, `0,${Waveform.linearToHeight(0)}`) + ` ${width},${Waveform.linearToHeight(0)}`} />;
             })}
         </svg>;
+    }
+
+    private static linearToHeight(linearAudioValue: number): number {
+        // return (HEIGHT / 2) - (linearAudioValue * (HEIGHT / 2));
+        return (HEIGHT) - (Math.abs(linearAudioValue) * (HEIGHT));
     }
 }
