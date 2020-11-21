@@ -236,11 +236,6 @@ class App extends React.Component<IAppProps, IAppState>
                 : null
             }
 
-            <p>Small</p>
-            {(channelData)
-                ? <Waveform width={WAVEFORM_WIDTH} numbers={[channelData.subarray(1000, 1000 + WAVEFORM_WIDTH)]} />
-                : null}
-
             <fieldset>
                 <legend>Controls</legend>
 
