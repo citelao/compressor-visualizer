@@ -16,7 +16,7 @@ export default class Waveform extends React.Component<IWaveformProps, IWaveformS
 {
     public render() {
         const width = this.props.width;
-        const SCALE_DB = [0, -10, -50, -90];
+        const SCALE_DB = [0, -10, -28, -90];
         // const SCALE_LINEAR_PTS = [0, 0.5, 1];
         
         return <svg width={width} height={HEIGHT}>
@@ -25,7 +25,10 @@ export default class Waveform extends React.Component<IWaveformProps, IWaveformS
                 const linear = Db.dbToLinear(db);
                 const y = Waveform.linearToHeight(linear);
                 console.log(`Db: ${db} => ${linear} => ${y}px`);
-                return <line x1={0} x2={5} y1={y} y2={y} stroke="black" />;
+                return <>
+                    <line x1={0} x2={5} y1={y} y2={y} stroke="black" />
+                    <text x={9} y={y} dominantBaseline="middle">{db}db</text>
+                </>;
             })}
 
             {/* Waveform */}
