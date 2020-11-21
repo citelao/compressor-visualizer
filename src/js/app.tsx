@@ -70,7 +70,10 @@ class App extends React.Component<IAppProps, IAppState>
 
         const timer = new Timer();
 
-        const buffer = await fetchAudioBuffer("notrack/FourMoreWeeks_VansInJapan.mp3");
+        // const buffer = await fetchAudioBuffer("notrack/FourMoreWeeks_VansInJapan.mp3");
+        const buffer = await fetchAudioBuffer("notrack/MS0901_SnareNoComp.wav"); // YOU CAN HEAR THE DIFF!
+        // const buffer = await fetchAudioBuffer("notrack/MS0908_Drums1NoComp_MR1001.wav"); // You can hear a diff!
+        // const buffer = await fetchAudioBuffer("notrack/MS0912_GtrNoComp_MR0702.wav");
         console.log(buffer, absMeanSample(buffer.getChannelData(0), 1), rmsSample(buffer.getChannelData(0), 1));
 
         const audioContext = new AudioContext();
