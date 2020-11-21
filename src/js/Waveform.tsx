@@ -15,12 +15,17 @@ export default class Waveform extends React.Component<IWaveformProps, IWaveformS
         const width = this.props.width;
         const height = 300;
         return <svg width={width} height={height}>
-            {this.props.numbers.map((wavePts) => {
-                const rectWidth = Math.max(1, width / wavePts.length);
-                return Array.from(wavePts).map((v, i) => {
-                    const rectHeight = Math.abs(v) * height; // v is within (-1, 1)
-                    return <rect key={i} x={i * rectWidth} width={rectWidth} height={rectHeight} opacity={1 / this.props.numbers.length} color="black" />;
-                });
+            {this.props.numbers.map((wave) => {
+                const stepWidth = Math.max(1, width / wave.length);
+                return <polygon
+                    color="black"
+                    opacity={1 / this.props.numbers.length}
+                    points={Array.from(wave).reduce<string>((acc, v, i) => {
+                        // Create x,y pts for the wave:
+                        const x = i * stepWidth;
+                        const y = Math.abs(v) * height;
+                        return acc + ` ${x},${y}`;
+                    }, "0,0") + ` ${width},0`} />;
             })}
         </svg>;
     }
