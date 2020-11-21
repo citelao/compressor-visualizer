@@ -424,7 +424,7 @@ function absMaxSample(arr: Float32Array, samples: number): Float32Array {
     const groupSize = getGroupSize(arr.length, samples);
     for (let index = 0; index < samples; index++) {
         const beginIndex = groupSize * index;
-        const endIndex = groupSize * (index + 1);
+        const endIndex = (groupSize * index) + 1;
         const subArray = arr.subarray(beginIndex, endIndex);
         const max = subArray.reduce((max, v) => Math.max(max, Math.abs(v)), - Infinity);
         outputArray[index] = max;
@@ -439,7 +439,7 @@ function meanSample(arr: Float32Array, samples: number): Float32Array {
     const groupSize = getGroupSize(arr.length, samples);
     for (let index = 0; index < samples; index++) {
         const beginIndex = groupSize * index;
-        const endIndex = groupSize * (index + 1);
+        const endIndex = (groupSize * index) + 1;
         const subArray = arr.subarray(beginIndex, endIndex);
         const mean = (subArray.reduce((acc, v) => acc + v, 0)) / subArray.length;
         outputArray[index] = mean;
@@ -455,7 +455,7 @@ function absMeanSample(arr: Float32Array, samples: number): Float32Array {
     console.log(groupSize);
     for (let index = 0; index < samples; index++) {
         const beginIndex = groupSize * index;
-        const endIndex = groupSize * (index + 1);
+        const endIndex = (groupSize * index) + 1;
         const subArray = arr.subarray(beginIndex, endIndex);
         // console.log(subArray.length);
         const mean = (subArray.reduce((acc, v) => acc + Math.abs(v), 0)) / subArray.length;
@@ -471,7 +471,7 @@ function rmsSample(arr: Float32Array, samples: number): Float32Array {
     const groupSize = getGroupSize(arr.length, samples);
     for (let index = 0; index < samples; index++) {
         const beginIndex = groupSize * index;
-        const endIndex = groupSize * (index + 1);
+        const endIndex = (groupSize * index) + 1;
         const subArray = arr.subarray(beginIndex, endIndex);
         const sumOfSquares = (subArray.reduce((acc, v) => acc + (v * v), 0));
         outputArray[index] = Math.sqrt(sumOfSquares / subArray.length);
