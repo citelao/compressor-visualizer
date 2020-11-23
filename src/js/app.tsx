@@ -159,7 +159,7 @@ class App extends React.Component<IAppProps, IAppState>
 
         const offset = 12000;
         const size = 500;
-        console.log(`Group size: ${getGroupSize(size, samples)}`);
+        console.log(`Offset: ${offset}; Size: ${size}; Samples: ${samples}; Group size: ${getGroupSize(size, samples)}`);
         const viewWidthS = (this.state.audioBuffer)
             ? size / this.state.audioBuffer.sampleRate
             : 0;
@@ -171,12 +171,14 @@ class App extends React.Component<IAppProps, IAppState>
         let maxWaveform;
         let meanWaveform;
         let rmsWaveform;
+        let pureWaveform;
         if (channelData) {
             const subpart = channelData.subarray(offset, offset + size);
             maxWaveform = absMaxSample(subpart, samples);
             meanWaveform = absMeanSample(subpart, samples);
             rmsWaveform = rmsSample(subpart, samples);
 
+            pureWaveform = subpart;
             // console.log(subpart);
         }
 
@@ -220,6 +222,10 @@ class App extends React.Component<IAppProps, IAppState>
             <p>Original (length {this.state.audioBuffer?.length}; load: {this.state.audioLoadTimeMs}ms)</p>
             {(maxWaveform && meanWaveform && rmsWaveform)
                 ? <Waveform width={WAVEFORM_WIDTH} numbers={[maxWaveform, meanWaveform, rmsWaveform]} />
+                : null
+            }
+            {(pureWaveform)
+                ? <Waveform width={WAVEFORM_WIDTH} numbers={[pureWaveform]} />
                 : null
             }
             <button onClick={this.handlePlayModified}>
@@ -401,78 +407,53 @@ function getGroupSize(length: number, samples: number): number {
     return groupSize;
 }
 
-function randomSample(arr: Float32Array, samples: number): Float32Array {
+function groupSample(arr: Float32Array, samples: number, fn: (batch: Float32Array) => number): Float32Array {
+    const groupSize = getGroupSize(arr.length, samples);
+    // const actualSize = TODO
     const outputArray = new Float32Array(samples);
 
-    const groupSize = getGroupSize(arr.length, samples);
     for (let index = 0; index < samples; index++) {
-        const inputIndex = groupSize * index;
-        outputArray[index] = arr[inputIndex];
+        const beginIndex = groupSize * index;
+        const endIndex = groupSize * (index + 1);
+        const batch = arr.subarray(beginIndex, endIndex);
+        outputArray[index] = fn(batch);
     }
 
     return outputArray;
+}
+
+function randomSample(arr: Float32Array, samples: number): Float32Array {
+    return groupSample(arr, samples, (batch) => {
+        return batch[0];
+    });
 }
 
 function absMaxSample(arr: Float32Array, samples: number): Float32Array {
-    const outputArray = new Float32Array(samples);
-
-    const groupSize = getGroupSize(arr.length, samples);
-    for (let index = 0; index < samples; index++) {
-        const beginIndex = groupSize * index;
-        const endIndex = groupSize * (index + 1);
-        const subArray = arr.subarray(beginIndex, endIndex);
-        const max = subArray.reduce((max, v) => Math.max(max, Math.abs(v)), - Infinity);
-        outputArray[index] = max;
-    }
-
-    return outputArray;
+    return groupSample(arr, samples, (batch) => {
+        const max = batch.reduce((max, v) => Math.max(max, Math.abs(v)), - Infinity);
+        return max;
+    });
 }
 
 function meanSample(arr: Float32Array, samples: number): Float32Array {
-    const outputArray = new Float32Array(samples);
-
-    const groupSize = getGroupSize(arr.length, samples);
-    for (let index = 0; index < samples; index++) {
-        const beginIndex = groupSize * index;
-        const endIndex = groupSize * (index + 1);
-        const subArray = arr.subarray(beginIndex, endIndex);
-        const mean = (subArray.reduce((acc, v) => acc + v, 0)) / subArray.length;
-        outputArray[index] = mean;
-    }
-
-    return outputArray;
+    return groupSample(arr, samples, (batch) => {
+        const mean = (batch.reduce((acc, v) => acc + v, 0)) / batch.length;
+        return mean;
+    });
 }
 
 function absMeanSample(arr: Float32Array, samples: number): Float32Array {
-    const outputArray = new Float32Array(samples);
-
-    const groupSize = getGroupSize(arr.length, samples);
-    console.log(groupSize);
-    for (let index = 0; index < samples; index++) {
-        const beginIndex = groupSize * index;
-        const endIndex = groupSize * (index + 1);
-        const subArray = arr.subarray(beginIndex, endIndex);
-        // console.log(beginIndex, endIndex, subArray.length);
-        const mean = (subArray.reduce((acc, v) => acc + Math.abs(v), 0)) / subArray.length;
-        outputArray[index] = mean;
-    }
-
-    return outputArray;
+    return groupSample(arr, samples, (batch) => {
+        const mean = (batch.reduce((acc, v) => acc + Math.abs(v), 0)) / batch.length;
+        return mean;
+    });
 }
 
 function rmsSample(arr: Float32Array, samples: number): Float32Array {
-    const outputArray = new Float32Array(samples);
-
-    const groupSize = getGroupSize(arr.length, samples);
-    for (let index = 0; index < samples; index++) {
-        const beginIndex = groupSize * index;
-        const endIndex = groupSize * (index + 1);
-        const subArray = arr.subarray(beginIndex, endIndex);
-        const sumOfSquares = (subArray.reduce((acc, v) => acc + (v * v), 0));
-        outputArray[index] = Math.sqrt(sumOfSquares / subArray.length);
-    }
-
-    return outputArray;
+    return groupSample(arr, samples, (batch) => {
+        const sumOfSquares = (batch.reduce((acc, v) => acc + (v * v), 0));
+        return Math.sqrt(sumOfSquares / batch.length);
+    });
 }
 
 // Just give me a function that returns the AudioNode you want hooked up to the
