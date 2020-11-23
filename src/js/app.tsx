@@ -282,11 +282,15 @@ class App extends React.Component<IAppProps, IAppState>
             </fieldset>
 
             {/* Debug compressor visualize */}
-            <Graph height={100} width={100}
-                x1={-1} x2={0}
-                y1={-1} y2={0}
-                fn={(x) => Compressor.compressLinear(x, this.state.compressor)} />
-            <Graph height={100} width={100}
+            <Graph height={300} width={300}
+                x1={-1} x2={1}
+                y1={-1} y2={1}
+                fn={(x) => Compressor.compressLinear(Math.abs(x), this.state.compressor)} />
+            <Graph height={300} width={300}
+                x1={-1} x2={1}
+                y1={-1} y2={1}
+                fn={(x) => (Compressor.compressLinear(Math.abs(x), this.state.compressor) / Math.abs(x)) || 0} />
+            <Graph height={300} width={300}
                 x1={-2} x2={2}
                 y1={-2} y2={10}
                 fn={(x) => x ** 2} />
