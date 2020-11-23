@@ -8,18 +8,35 @@ interface IWaveformProps {
 }
 
 interface IWaveformState {
+    hoverHeight: number;
 }
 
 const HEIGHT = 300;
 
 export default class Waveform extends React.Component<IWaveformProps, IWaveformState>
 {
+    private isHandlingMouseMove = false;
+
+    public constructor(props: IWaveformProps) {
+        super(props);
+
+        this.state = {
+            hoverHeight: 0
+        }
+    }
+
     public render() {
         const width = this.props.width;
         const SCALE_DB = [0, -10, -28, -90];
         // const SCALE_LINEAR_PTS = [0, 0.5, 1];
         
-        return <svg width={width} height={HEIGHT}>
+        return <svg width={width} height={HEIGHT} onMouseMove={this.handleMouseMove}>
+            {/* Hover line */}
+            <g>
+                <text x={9} y={10} dominantBaseline="middle">{Db.linearToDb(Waveform.heightToLinear(this.state.hoverHeight))}db ({Waveform.heightToLinear(this.state.hoverHeight)})</text>
+                <line x1={0} x2={width} y1={this.state.hoverHeight} y2={this.state.hoverHeight} stroke="black" />
+            </g>
+
             {/* Scale */}
             {SCALE_DB.map((db) => {
                 const linear = Db.dbToLinear(db);
@@ -51,5 +68,24 @@ export default class Waveform extends React.Component<IWaveformProps, IWaveformS
     private static linearToHeight(linearAudioValue: number): number {
         // return (HEIGHT / 2) - (linearAudioValue * (HEIGHT / 2));
         return (HEIGHT) - (Math.abs(linearAudioValue) * (HEIGHT));
+    }
+
+    private static heightToLinear(height: number): number {
+        // TODO centered algorithm
+        return (HEIGHT - height) / HEIGHT;
+    }
+
+    private handleMouseMove = (e: React.MouseEvent<SVGSVGElement, MouseEvent>) => {
+        if (!this.isHandlingMouseMove) {
+            const target = e.currentTarget;
+            requestAnimationFrame(() => {
+                const svg = target as SVGSVGElement;
+                this.setState({
+                    hoverHeight: e.clientY - svg.getBoundingClientRect().top
+                })
+                this.isHandlingMouseMove = false;
+            });
+            this.isHandlingMouseMove = true;
+        }
     }
 }
