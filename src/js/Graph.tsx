@@ -1,4 +1,4 @@
-import React from "react";
+import React, { ReactSVGElement } from "react";
 
 interface IGraphProps {
     height: number,
@@ -17,6 +17,21 @@ interface Point {
     y: number;
 }
 
+interface IPointLineProps {
+    p1: Point,
+    p2: Point
+}
+function PointLine(props: IPointLineProps & React.SVGProps<SVGLineElement>): JSX.Element {
+    const {p1, p2, ...remaining} = props;
+    return <line
+        x1={p1.x}
+        y1={p1.y}
+        x2={p2.x}
+        y2={p2.y}
+        {...remaining}
+        />;
+}
+
 export default class Graph extends React.Component<IGraphProps> {
     public render() {
         const sampleCount = this.props.width;
@@ -31,14 +46,20 @@ export default class Graph extends React.Component<IGraphProps> {
         }
         console.log(pts);
 
-        const origin = this.truePointToDrawPoint({ x: 0, y: 0 });
-        const xTop = this.truePointToDrawPoint({ x: 0, y: this.props.y2 });
-        const yTop = this.truePointToDrawPoint({ x: this.props.x2, y: 0 });
+        // const origin = this.truePointToDrawPoint({ x: 0, y: 0 });
+        const xOrigin = [
+            this.truePointToDrawPoint({ x: 0, y: this.props.y1 }),
+            this.truePointToDrawPoint({ x: 0, y: this.props.y2 })
+        ];
+        const yOrigin = [
+            this.truePointToDrawPoint({ x: this.props.x1, y: 0 }),
+            this.truePointToDrawPoint({ x: this.props.x2, y: 0 })
+        ];
 
         return <svg height={this.props.height} width={this.props.width}>
             {/* Grid */}
-            <line x1={origin.x} x2={xTop.x} y1={origin.y} y2={xTop.y} stroke="black" opacity="0.2" />
-            <line x1={origin.x} x2={yTop.x} y1={origin.y} y2={yTop.y} stroke="black" opacity="0.2" />
+            <PointLine p1={xOrigin[0]} p2={xOrigin[1]} stroke="black" opacity="0.2" />
+            <PointLine p1={yOrigin[0]} p2={yOrigin[1]} stroke="black" opacity="0.2" />
 
             <polyline
                 stroke="black"
