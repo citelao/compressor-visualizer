@@ -44,7 +44,7 @@ export default class Graph extends React.Component<IGraphProps> {
             const y = this.props.fn(x);
             pts.push(this.truePointToDrawPoint({ x, y }));
         }
-        console.log(pts);
+        // console.log(pts);
 
         // const origin = this.truePointToDrawPoint({ x: 0, y: 0 });
         const xOrigin = [
