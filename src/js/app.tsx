@@ -23,7 +23,8 @@ interface IAppState {
 
     compressor: ICompressorSettings,
 
-    samples: number
+    samples: number, // number of samples to visualize
+    size: number, // scope of the audio to view
 }
 
 class App extends React.Component<IAppProps, IAppState>
@@ -53,7 +54,8 @@ class App extends React.Component<IAppProps, IAppState>
                 release: .25
             },
 
-            samples: 500
+            samples: 500,
+            size: 500
         };
     }
 
@@ -137,7 +139,7 @@ class App extends React.Component<IAppProps, IAppState>
         const WAVEFORM_WIDTH = 1000;
 
         const offset = 12000;
-        const size = 500000;
+        const size = this.state.size;
         console.log(`Offset: ${offset}; Size: ${size}; Samples: ${samples}; Group size: ${getGroupSize(size, samples)}`);
         const viewWidthS = (this.state.audioBuffer)
             ? size / this.state.audioBuffer.sampleRate
@@ -253,6 +255,11 @@ class App extends React.Component<IAppProps, IAppState>
                     <input type="range" onChange={this.handleResolutionChange} value={Math.log2(samples)} min={1} max={Math.log2(size)} />
                 </label>
 
+                <label>
+                    View size
+                    <input type="range" onChange={this.handleSizeChange} value={Math.log2(size)} min={1} max={Math.log2(this.state.audioBuffer?.length || 0)} />
+                </label>
+
                 <p>threshold</p>
                 <label>
                     threshold
@@ -315,6 +322,14 @@ class App extends React.Component<IAppProps, IAppState>
 
         this.setState({
             samples: resolution
+        });
+    }
+
+    private handleSizeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const size = Math.pow(2, e.target.valueAsNumber);
+
+        this.setState({
+            size: size
         });
     }
 
