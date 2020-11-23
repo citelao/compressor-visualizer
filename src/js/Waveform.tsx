@@ -57,7 +57,7 @@ export default class Waveform extends React.Component<IWaveformProps, IWaveformS
 
             {/* Waveform */}
             {this.props.numbers.map((wave, i) => {
-                const stepWidth = Math.max(1, width / wave.length);
+                const stepWidth = width / wave.length;
                 return <polygon
                     key={i}
                     color="black"
