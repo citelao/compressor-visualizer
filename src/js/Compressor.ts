@@ -26,7 +26,14 @@ export default class Compressor {
             // TODO
             return linearValue;
         } else {
-            return (1 / compressor.ratio) * linearValue;
+            // Note: this diverges from the spec for the compression curve
+            // (https://www.w3.org/TR/webaudio/#compression-curve). The spec
+            // simply specifies linearity, but does not specify continuity.
+            // However, in practice, this function is continuous
+            // (https://source.chromium.org/chromium/chromium/src/+/master:third_party/blink/renderer/platform/audio/dynamics_compressor_kernel.cc;l=117;bpv=1;bpt=1),
+            // so follow the Chromium model and apply the ration "after" the
+            // threshold limit.
+            return linearKneeEnd + ((1 / compressor.ratio) * (linearValue - linearKneeEnd));
         }
     }
 }
