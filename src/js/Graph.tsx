@@ -12,37 +12,56 @@ interface IGraphProps {
     y2: number
 }
 
+interface Point {
+    x: number;
+    y: number;
+}
+
 export default class Graph extends React.Component<IGraphProps> {
     public render() {
         const sampleCount = this.props.width;
         const rangeX = (this.props.x2 - this.props.x1);
         const offsetX = this.props.x1;
-        const rangeY = (this.props.y2 - this.props.y1);
-        const offsetY = this.props.y1;
         const pts = [];
         for (let i = 0; i < sampleCount; i++) {
-            const stepWidth = this.props.width / sampleCount;
-            const xPos = i * stepWidth;
-
             const elapsedPercent = i / sampleCount;
             const x = offsetX + (elapsedPercent * rangeX);
             const y = this.props.fn(x);
-            console.log(x, y);
-            const yPercentage = (y - offsetY) / rangeY;
-            const yPos = yPercentage * this.props.height;
-
-            pts.push({ x: xPos, y: yPos});
+            pts.push(this.truePointToDrawPoint({ x, y }));
         }
+        console.log(pts);
+
+        const origin = this.truePointToDrawPoint({ x: 0, y: 0 });
+        const xTop = this.truePointToDrawPoint({ x: 0, y: this.props.y2 });
+        const yTop = this.truePointToDrawPoint({ x: this.props.x2, y: 0 });
 
         return <svg height={this.props.height} width={this.props.width}>
             {/* Grid */}
-            <line x1={0} x2={this.props.width} y1={this.props.height} y2={this.props.height} stroke="black" />
-            <line x1={0} x2={0} y1={0} y2={this.props.height} stroke="black" />
+            <line x1={origin.x} x2={xTop.x} y1={origin.y} y2={xTop.y} stroke="black" opacity="0.2" />
+            <line x1={origin.x} x2={yTop.x} y1={origin.y} y2={yTop.y} stroke="black" opacity="0.2" />
 
             <polyline
                 stroke="black"
                 fill="none"
                 points={pts.map((pt) => `${pt.x},${pt.y}`).join(" ")} />
         </svg>
+    }
+
+    private truePointToDrawPoint(pt: Point): Point {
+        const rangeX = (this.props.x2 - this.props.x1);
+        const offsetX = this.props.x1;
+        const rangeY = (this.props.y2 - this.props.y1);
+        const offsetY = this.props.y1;
+
+        const unoffsetPt: Point = { x: pt.x - offsetX, y: pt.y - offsetY };
+        const percentagePt: Point = {
+            x: unoffsetPt.x / rangeX,
+            y: unoffsetPt.y / rangeY
+        };
+
+        return {
+            x: percentagePt.x * this.props.width,
+            y: this.props.height - (percentagePt.y * this.props.height)
+        };
     }
 }

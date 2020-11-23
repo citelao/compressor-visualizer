@@ -286,6 +286,10 @@ class App extends React.Component<IAppProps, IAppState>
                 x1={-1} x2={0}
                 y1={-1} y2={0}
                 fn={(x) => Compressor.compressLinear(x, this.state.compressor)} />
+            <Graph height={100} width={100}
+                x1={-2} x2={2}
+                y1={0} y2={10}
+                fn={(x) => x ** 2} />
         </>;
     }
     
