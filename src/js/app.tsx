@@ -177,6 +177,29 @@ class App extends React.Component<IAppProps, IAppState>
             return Object.assign({}, this.state.compressor, partial);
         };
 
+        const attenuateLinear = (linearValue: number) => {
+            if (Math.abs(linearValue) < 0.0001) {
+                return 1.0;
+            } else {
+                const shapedInput = Compressor.compressLinear(Math.abs(linearValue), this.state.compressor);
+                return shapedInput / Math.abs(linearValue);
+            }
+        };
+        const compressorGraphs = <>
+            <Graph height={300} width={300}
+                x1={0} x2={1}
+                y1={0} y2={1}
+                fn={(x) => Compressor.compressLinear(Math.abs(x), this.state.compressor)} />
+            <Graph height={300} width={300}
+                x1={0} x2={1}
+                y1={0} y2={1}
+                fn={(x) => (attenuateLinear(x))} />
+            {/* <Graph height={300} width={300}
+                x1={-2} x2={2}
+                y1={-2} y2={10}
+                fn={(x) => x ** 2} /> */}
+        </>;
+
         return <>
             <h1>Compressor Visualizer</h1>
 
@@ -282,18 +305,7 @@ class App extends React.Component<IAppProps, IAppState>
             </fieldset>
 
             {/* Debug compressor visualize */}
-            <Graph height={300} width={300}
-                x1={-1} x2={1}
-                y1={-1} y2={1}
-                fn={(x) => Compressor.compressLinear(Math.abs(x), this.state.compressor)} />
-            <Graph height={300} width={300}
-                x1={-1} x2={1}
-                y1={-1} y2={1}
-                fn={(x) => (Compressor.compressLinear(Math.abs(x), this.state.compressor) / Math.abs(x)) || 0} />
-            <Graph height={300} width={300}
-                x1={-2} x2={2}
-                y1={-2} y2={10}
-                fn={(x) => x ** 2} />
+            {compressorGraphs}
         </>;
     }
     

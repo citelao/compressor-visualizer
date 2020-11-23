@@ -13,10 +13,11 @@ export default class Compressor {
         return Compressor.compressLinear(Db.dbToLinear(db), compressor);
     }
 
+    // https://www.w3.org/TR/webaudio/#compression-curve
     public static compressLinear(linearValue: number, compressor: ICompressorSettings): number {
         // TODO
         const linearThreshold = Db.dbToLinear(compressor.threshold);
-        const linearKneeEnd =  Db.dbToLinear(compressor.threshold + compressor.knee);
+        const linearKneeEnd = Db.dbToLinear(compressor.threshold + compressor.knee);
         console.log(`threshold: ${linearThreshold}; knee end: ${linearKneeEnd}`)
         if (linearValue < linearThreshold) {
             return linearValue;
