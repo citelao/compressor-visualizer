@@ -409,10 +409,10 @@ function getGroupSize(length: number, samples: number): number {
 
 function groupSample(arr: Float32Array, samples: number, fn: (batch: Float32Array) => number): Float32Array {
     const groupSize = getGroupSize(arr.length, samples);
-    // const actualSize = TODO
-    const outputArray = new Float32Array(samples);
+    const actualSamples = Math.floor(arr.length / groupSize);
+    const outputArray = new Float32Array(actualSamples);
 
-    for (let index = 0; index < samples; index++) {
+    for (let index = 0; index < actualSamples; index++) {
         const beginIndex = groupSize * index;
         const endIndex = groupSize * (index + 1);
         const batch = arr.subarray(beginIndex, endIndex);
