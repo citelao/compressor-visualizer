@@ -66,8 +66,8 @@ class App extends React.Component<IAppProps, IAppState>
         const timer = new Timer();
 
         // const buffer = await fetchAudioBuffer("notrack/FourMoreWeeks_VansInJapan.mp3");
-        const buffer = await fetchAudioBuffer("notrack/MS0901_SnareNoComp.wav"); // YOU CAN HEAR THE DIFF!
-        // const buffer = await fetchAudioBuffer("notrack/MS0908_Drums1NoComp_MR1001.wav"); // You can hear a diff!
+        // const buffer = await fetchAudioBuffer("notrack/MS0901_SnareNoComp.wav"); // YOU CAN HEAR THE DIFF!
+        const buffer = await fetchAudioBuffer("notrack/MS0908_Drums1NoComp_MR1001.wav"); // You can hear a diff!
         // const buffer = await fetchAudioBuffer("notrack/MS0912_GtrNoComp_MR0702.wav");
         console.log(buffer, absMeanSample(buffer.getChannelData(0), 1), rmsSample(buffer.getChannelData(0), 1));
 
@@ -137,7 +137,7 @@ class App extends React.Component<IAppProps, IAppState>
         const WAVEFORM_WIDTH = 1000;
 
         const offset = 12000;
-        const size = 500;
+        const size = 500000;
         console.log(`Offset: ${offset}; Size: ${size}; Samples: ${samples}; Group size: ${getGroupSize(size, samples)}`);
         const viewWidthS = (this.state.audioBuffer)
             ? size / this.state.audioBuffer.sampleRate
@@ -186,6 +186,7 @@ class App extends React.Component<IAppProps, IAppState>
             }
         };
         const compressorGraphs = <>
+            <p>Compressor curve &amp; attenuation</p>
             <Graph height={300} width={300}
                 x1={0} x2={1}
                 y1={0} y2={1}
@@ -226,10 +227,10 @@ class App extends React.Component<IAppProps, IAppState>
                 ? <Waveform width={WAVEFORM_WIDTH} numbers={[maxWaveform, meanWaveform, rmsWaveform]} />
                 : null
             }
-            {(pureWaveform)
+            {/* {(pureWaveform)
                 ? <Waveform width={WAVEFORM_WIDTH} numbers={[pureWaveform]} />
                 : null
-            }
+            } */}
             <button onClick={this.handlePlayModified}>
                 {this.state.transformedSound?.isPlaying() 
                     ? "Pause transformed"
@@ -249,7 +250,7 @@ class App extends React.Component<IAppProps, IAppState>
 
                 <label>
                     View resolution
-                    <input type="range" onChange={this.handleResolutionChange} value={Math.log2(samples)} min={1} max={Math.log2(WAVEFORM_WIDTH)} />
+                    <input type="range" onChange={this.handleResolutionChange} value={Math.log2(samples)} min={1} max={Math.log2(size)} />
                 </label>
 
                 <p>threshold</p>
