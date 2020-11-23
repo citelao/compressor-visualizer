@@ -24,22 +24,23 @@ export default class Waveform extends React.Component<IWaveformProps, IWaveformS
             {SCALE_DB.map((db) => {
                 const linear = Db.dbToLinear(db);
                 const y = Waveform.linearToHeight(linear);
-                console.log(`Db: ${db} => ${linear} => ${y}px`);
-                return <>
+                // console.log(`Db: ${db} => ${linear} => ${y}px`);
+                return <g key={db}>
                     <line x1={0} x2={5} y1={y} y2={y} stroke="black" />
                     <text x={9} y={y} dominantBaseline="middle">{db}db</text>
-                </>;
+                </g>;
             })}
 
             {/* Waveform */}
-            {this.props.numbers.map((wave) => {
+            {this.props.numbers.map((wave, i) => {
                 const stepWidth = Math.max(1, width / wave.length);
                 return <polygon
+                    key={i}
                     color="black"
                     opacity={1 / this.props.numbers.length}
-                    points={Array.from(wave).reduce<string>((acc, v, i) => {
+                    points={Array.from(wave).reduce<string>((acc, v, j) => {
                         // Create x,y pts for the wave:
-                        const x = i * stepWidth;
+                        const x = j * stepWidth;
                         const y = Waveform.linearToHeight(v);
                         return acc + ` ${x},${y}`;
                     }, `0,${Waveform.linearToHeight(0)}`) + ` ${width},${Waveform.linearToHeight(0)}`} />;
