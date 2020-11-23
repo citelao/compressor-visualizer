@@ -1,19 +1,13 @@
 import React from "react";
 import ReactDOM from "react-dom";
+import Compressor, { ICompressorSettings } from "./Compressor";
 import Db from "./Db";
+import Graph from "./Graph";
 import Sound from "./Sound";
 import Timer from "./timer";
 import Waveform from "./Waveform";
 
 interface IAppProps {}
-
-interface ICompressorSettings {
-    threshold: number,
-    ratio: number,
-    knee: number,
-    attack: number,
-    release: number,
-}
 
 interface IAppState {
     audioContext: AudioContext | null,
@@ -119,23 +113,8 @@ class App extends React.Component<IAppProps, IAppState>
                 compressor.release.value = this.state.compressor.release;
 
                 const gain = ctx.createGain();
-                const compressionCurve = (input: number) => {
-                    // TODO
-                    const linearThreshold = Db.dbToLinear(this.state.compressor.threshold);
-                    const linearKneeEnd =  Db.dbToLinear(this.state.compressor.threshold + this.state.compressor.knee);
-                    console.log(`threshold: ${linearThreshold}; knee end: ${linearKneeEnd}`)
-                    if (input < linearThreshold) {
-                        return input;
-                    } else if (input < linearKneeEnd) {
-                        // User-agent dependent
-                        // TODO
-                        return input;
-                    } else {
-                        return (1 / this.state.compressor.ratio) * input;
-                    }
-                };
-                console.log(compressionCurve(0.0), compressionCurve(0.03), compressionCurve(0.3))
-                const fullMakeupGain = 1 / compressionCurve(1.0);
+                // console.log(compressionCurve(0.0), compressionCurve(0.03), compressionCurve(0.3), compressionCurve(0.3))
+                const fullMakeupGain = 1 / Compressor.compressDb(1.0, this.state.compressor);
                 const makeupGain = Math.pow(fullMakeupGain, 0.6);
                 const invertMakeupGain = 1 / makeupGain;
                 gain.gain.value = invertMakeupGain;
@@ -178,7 +157,7 @@ class App extends React.Component<IAppProps, IAppState>
             meanWaveform = absMeanSample(subpart, samples);
             rmsWaveform = rmsSample(subpart, samples);
 
-            pureWaveform = subpart;
+            pureWaveform = channelData;
             // console.log(subpart);
         }
 
@@ -301,6 +280,12 @@ class App extends React.Component<IAppProps, IAppState>
                 
                 <p>gain</p>
             </fieldset>
+
+            {/* Debug compressor visualize */}
+            <Graph height={100} width={100}
+                x1={-1} x2={0}
+                y1={-1} y2={0}
+                fn={(x) => Compressor.compressLinear(x, this.state.compressor)} />
         </>;
     }
     
