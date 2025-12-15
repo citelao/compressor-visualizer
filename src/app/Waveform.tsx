@@ -34,26 +34,43 @@ export class Waveform2 extends React.Component<IWaveformProps, IWaveformState> {
 
         const x = d3.scaleLinear([0, data.length], [margin.left, this.props.width - margin.right]);
         // todo: log that supports negatives?
-        const y = d3.scaleLinear(d3.extent(data) as [number, number], [height - margin.bottom, margin.top]);
+        // const y = d3.scaleLinear(d3.extent(data) as [number, number], [height - margin.bottom, margin.top]);
+        //
+        // Range is -1 to 1
+        // https://developer.mozilla.org/en-US/docs/Web/API/AudioBuffer
+        const y = d3.scaleLinear([-1, 1], [height - margin.bottom, margin.top]);
 
         console.log(d3.extent(data));
 
         const dataLine = d3.line<number>()
             .x((d, i) => x(i))
             .y((d) => y(d));
+        const xTicks = x.ticks(10);
+        const yTicks = y.ticks(5);
+        console.log(yTicks);
 
         return <svg
             width={this.props.width}
             height={height}>
 
             {/* a nice background for the data, using the margin */}
-            <rect x={margin.left} y={margin.top}
+            {/* <rect x={margin.left} y={margin.top}
                 width={this.props.width - margin.left - margin.right}
                 height={height - margin.top - margin.bottom}
-                fill="lightgray" />
+                fill="lightgray" /> */}
 
             <g>
                 <text x={10} y={10} dominantBaseline="middle">test</text>
+            </g>
+            <g name="yTicks">
+                {yTicks.map((tick) => (
+                    <g key={tick}>
+                        <line x1={margin.left} x2={this.props.width - margin.right}
+                            y1={y(tick)} y2={y(tick)} 
+                            stroke="black" strokeOpacity={0.2} />
+                        <text stroke="black" x={40} y={y(tick)} dominantBaseline="middle" textAnchor="end">{tick.toFixed(1)}</text>
+                    </g>
+                ))}
             </g>
             <g>
                 <path d={dataLine(data)!}

@@ -230,8 +230,8 @@ export default class App extends React.Component<IAppProps, IAppState>
                 : null
             }
             {
-                maxWaveform
-                ? <Waveform2 width={WAVEFORM_WIDTH} numbers={[maxWaveform/* , meanWaveform, rmsWaveform */]} />
+                pureWaveform
+                ? <Waveform2 width={WAVEFORM_WIDTH} numbers={[pureWaveform/* , meanWaveform, rmsWaveform */]} />
                 : null
             }
 
@@ -250,6 +250,10 @@ export default class App extends React.Component<IAppProps, IAppState>
             <p>Modified (load: {this.state.transformedRenderTimeMs}ms):</p>
             {(transformedMaxWaveform && transformedMeanWaveform && transformedRmsWaveform)
                 ? <Waveform width={WAVEFORM_WIDTH} numbers={[transformedMaxWaveform, transformedMeanWaveform, transformedRmsWaveform]} />
+                : null
+            }
+            {(transformedData)
+                ? <Waveform2 width={WAVEFORM_WIDTH} numbers={[transformedData/* , transformedMeanWaveform, transformedRmsWaveform */]} />
                 : null
             }
 
