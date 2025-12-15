@@ -5,7 +5,7 @@ import Db from "./Db";
 import Graph from "./Graph";
 import Sound from "./Sound";
 import Timer from "./Timer";
-import Waveform from "./Waveform";
+import Waveform, { Waveform2 } from "./Waveform";
 
 interface IAppProps {}
 
@@ -229,6 +229,12 @@ export default class App extends React.Component<IAppProps, IAppState>
                 ? <Waveform width={WAVEFORM_WIDTH} numbers={[maxWaveform, meanWaveform, rmsWaveform]} />
                 : null
             }
+            {
+                maxWaveform
+                ? <Waveform2 width={WAVEFORM_WIDTH} numbers={[maxWaveform/* , meanWaveform, rmsWaveform */]} />
+                : null
+            }
+
             {/* {(pureWaveform)
                 ? <Waveform width={WAVEFORM_WIDTH} numbers={[pureWaveform]} />
                 : null

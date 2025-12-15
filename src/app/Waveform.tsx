@@ -1,10 +1,12 @@
 import React from "react";
 import ReactDOM from "react-dom";
 import Db from "./Db";
+import * as d3 from "d3";
 
 interface IWaveformProps {
     numbers: Float32Array[];
     width: number;
+    height?: number;
 }
 
 interface IWaveformState {
@@ -13,6 +15,41 @@ interface IWaveformState {
 }
 
 const HEIGHT = 300;
+
+export class Waveform2 extends React.Component<IWaveformProps, IWaveformState> {
+    public constructor(props: IWaveformProps) {
+        super(props);
+
+        this.state = {
+            hoverHeight: 0,
+            isHovered: false
+        }
+    }
+
+    public render() {
+        const data = this.props.numbers[0];
+        const height = this.props.height || HEIGHT;
+
+        const x = d3.scaleLinear([0, data.length], [0, this.props.width]);
+        const y = d3.scaleLog(d3.extent(data) as [number, number], [0, height]);
+
+        const dataLine = d3.line<number>()
+            .x((d, i) => x(i))
+            .y((d) => y(d));
+
+        return <svg
+            width={this.props.width}
+            height={height}>
+            <g>
+                <text x={10} y={10} dominantBaseline="middle">test</text>
+            </g>
+            <g>
+                <path d={dataLine(data)!}
+                    fill="none" stroke="black" />
+            </g>
+        </svg>;
+    }
+}
 
 export default class Waveform extends React.Component<IWaveformProps, IWaveformState>
 {
