@@ -3,5 +3,6 @@ dist/
 .cache/
 
 static/notrack/
+**/notrack/**
 
 .DS_Store
