@@ -27,7 +27,7 @@ interface IAppState {
     size: number, // scope of the audio to view
 }
 
-class App extends React.Component<IAppProps, IAppState>
+export default class App extends React.Component<IAppProps, IAppState>
 {
     private audioRef: React.RefObject<HTMLAudioElement>;
 
