@@ -1,10 +1,10 @@
 import React from "react";
 import ReactDOM from "react-dom";
-import Compressor, { ICompressorSettings } from "./Compressor";
+import Compressor, { type ICompressorSettings } from "./Compressor";
 import Db from "./Db";
 import Graph from "./Graph";
 import Sound from "./Sound";
-import Timer from "./timer";
+import Timer from "./Timer";
 import Waveform from "./Waveform";
 
 interface IAppProps {}
@@ -29,7 +29,7 @@ interface IAppState {
 
 export default class App extends React.Component<IAppProps, IAppState>
 {
-    private audioRef: React.RefObject<HTMLAudioElement>;
+    private audioRef: React.RefObject<HTMLAudioElement | null>;
 
     constructor(props: IAppProps) {
         super(props);
@@ -387,8 +387,8 @@ export default class App extends React.Component<IAppProps, IAppState>
     }
 }
 
-const app = document.getElementById("app");
-ReactDOM.render(<App />, app);
+// const app = document.getElementById("app");
+// ReactDOM.render(<App />, app);
 
 async function fetchAudioBuffer(uri: string): Promise<AudioBuffer> {
     return new Promise<AudioBuffer>((resolve, reject) => {

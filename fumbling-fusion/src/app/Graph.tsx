@@ -1,4 +1,4 @@
-import React, { type ReactSVGElement } from "react";
+import React, { type JSX, type ReactSVGElement } from "react";
 
 interface IGraphProps {
     height: number,
