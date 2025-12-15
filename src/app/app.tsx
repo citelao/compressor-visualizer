@@ -248,10 +248,10 @@ export default class App extends React.Component<IAppProps, IAppState>
                 }
             </button>
             <p>Modified (load: {this.state.transformedRenderTimeMs}ms):</p>
-            {(transformedMaxWaveform && transformedMeanWaveform && transformedRmsWaveform)
+            {/* {(transformedMaxWaveform && transformedMeanWaveform && transformedRmsWaveform)
                 ? <Waveform width={WAVEFORM_WIDTH} numbers={[transformedMaxWaveform, transformedMeanWaveform, transformedRmsWaveform]} />
                 : null
-            }
+            } */}
             {(transformedData)
                 ? <Waveform2 width={WAVEFORM_WIDTH} numbers={[transformedData/* , transformedMeanWaveform, transformedRmsWaveform */]} />
                 : null
