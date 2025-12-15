@@ -15,24 +15,32 @@ interface IWaveformState {
 }
 
 interface IWaveform2State {
-    zoom: number;
-    panX: number;
-    isDragging: boolean;
-    lastMouseX: number;
+    transform: d3.ZoomTransform;
 }
 
 const HEIGHT = 300;
 
 export class Waveform2 extends React.Component<IWaveformProps, IWaveform2State> {
+    private svgRef = React.createRef<SVGSVGElement>();
+    private zoomBehavior: d3.ZoomBehavior<SVGSVGElement, unknown>;
+
     public constructor(props: IWaveformProps) {
         super(props);
 
         this.state = {
-            zoom: 1,
-            panX: 0,
-            isDragging: false,
-            lastMouseX: 0
+            transform: d3.zoomIdentity
         }
+
+        this.zoomBehavior = d3.zoom<SVGSVGElement, unknown>()
+            .scaleExtent([0.1, 20])
+            .filter((event) => {
+                // Only allow zoom with shift+wheel, and pan with drag
+                if (event.type === 'wheel') {
+                    return event.shiftKey;
+                }
+                return event.type !== 'wheel';
+            })
+            .on('zoom', this.handleZoom);
     }
 
     public render() {
@@ -41,38 +49,25 @@ export class Waveform2 extends React.Component<IWaveformProps, IWaveform2State> 
 
         const margin = { top: 20, right: 20, bottom: 20, left: 20 };
 
-        // Apply zoom and pan transformations
-        const zoomedDataLength = data.length / this.state.zoom;
-        const startIndex = Math.max(0, Math.floor(this.state.panX));
-        const endIndex = Math.min(data.length, Math.floor(startIndex + zoomedDataLength));
-        const visibleData = data.slice(startIndex, endIndex);
+        // Apply d3 transform to scales
+        const x = this.state.transform.rescaleX(
+            d3.scaleLinear([0, data.length], [margin.left, this.props.width - margin.right])
+        );
 
-        const x = d3.scaleLinear([0, visibleData.length], [margin.left, this.props.width - margin.right]);
-        // todo: log that supports negatives?
-        // const y = d3.scaleLinear(d3.extent(data) as [number, number], [height - margin.bottom, margin.top]);
-        //
-        // Range is -1 to 1
-        // https://developer.mozilla.org/en-US/docs/Web/API/AudioBuffer
         const y = d3.scaleLinear([-1, 1], [height - margin.bottom, margin.top]);
-
-        console.log(d3.extent(data));
 
         const dataLine = d3.line<number>()
             .x((d, i) => x(i))
             .y((d) => y(d));
+
         const xTicks = x.ticks(10);
         const yTicks = y.ticks(5);
-        console.log(yTicks);
 
         return <svg
+            ref={this.svgRef}
             width={this.props.width}
             height={height}
-            onWheel={this.handleWheel}
-            onMouseDown={this.handleMouseDown}
-            onMouseMove={this.handleMouseMove}
-            onMouseUp={this.handleMouseUp}
-            onMouseLeave={this.handleMouseLeave}
-            style={{ cursor: this.state.isDragging ? 'grabbing' : 'grab' }}>
+            style={{ cursor: 'grab' }}>
 
             {/* a nice background for the data, using the margin */}
             {/* <rect x={margin.left} y={margin.top}
@@ -82,100 +77,41 @@ export class Waveform2 extends React.Component<IWaveformProps, IWaveform2State> 
 
             <g>
                 <text x={10} y={10} dominantBaseline="middle">
-                    Zoom: {this.state.zoom.toFixed(2)}x | Pan: {this.state.panX.toFixed(0)}
+                    Zoom: {this.state.transform.k.toFixed(2)}x | Pan: {this.state.transform.x.toFixed(0)}
                 </text>
             </g>
             <g name="yTicks">
                 {yTicks.map((tick) => (
                     <g key={tick}>
                         <line x1={margin.left} x2={this.props.width - margin.right}
-                            y1={y(tick)} y2={y(tick)} 
+                            y1={y(tick)} y2={y(tick)}
                             stroke="black" strokeOpacity={0.2} />
                         <text stroke="black" x={40} y={y(tick)} dominantBaseline="middle" textAnchor="end">{tick.toFixed(1)}</text>
                     </g>
                 ))}
             </g>
             <g>
-                <path d={dataLine(visibleData)!}
+                <path d={dataLine(data)!}
                     fill="none" stroke="black" strokeWidth={1} />
             </g>
         </svg>;
     }
 
-    private handleWheel = (e: React.WheelEvent<SVGSVGElement>) => {
-        if (e.shiftKey) {
-            e.preventDefault();
-            
-            const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
-            const newZoom = Math.max(0.1, Math.min(20, this.state.zoom * zoomFactor));
-            
-            // Calculate mouse position relative to the SVG
-            const rect = e.currentTarget.getBoundingClientRect();
-            const mouseX = e.clientX - rect.left;
-            const margin = { top: 20, right: 20, bottom: 20, left: 20 };
-            const dataWidth = this.props.width - margin.left - margin.right;
-            const mouseRatio = (mouseX - margin.left) / dataWidth;
-            
-            // Adjust pan to zoom around the mouse position
-            const dataLength = this.props.numbers[0].length;
-            const oldVisibleLength = dataLength / this.state.zoom;
-            const newVisibleLength = dataLength / newZoom;
-            const lengthDiff = oldVisibleLength - newVisibleLength;
-            const panAdjustment = lengthDiff * mouseRatio;
-            
-            const newPanX = Math.max(0, Math.min(
-                dataLength - newVisibleLength,
-                this.state.panX + panAdjustment
-            ));
-            
-            this.setState({
-                zoom: newZoom,
-                panX: newPanX
-            });
+    public componentDidMount() {
+        if (this.svgRef.current) {
+            d3.select(this.svgRef.current).call(this.zoomBehavior);
         }
     }
 
-    private handleMouseDown = (e: React.MouseEvent<SVGSVGElement>) => {
-        e.preventDefault();
-        this.setState({
-            isDragging: true,
-            lastMouseX: e.clientX
-        });
-    }
-
-    private handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
-        if (this.state.isDragging) {
-            const deltaX = e.clientX - this.state.lastMouseX;
-            const margin = { top: 20, right: 20, bottom: 20, left: 20 };
-            const dataWidth = this.props.width - margin.left - margin.right;
-            
-            // Convert pixel movement to data units
-            const dataLength = this.props.numbers[0].length;
-            const visibleDataLength = dataLength / this.state.zoom;
-            const pixelToDataRatio = visibleDataLength / dataWidth;
-            const dataDelta = -deltaX * pixelToDataRatio; // Negative for natural panning
-            
-            const newPanX = Math.max(0, Math.min(
-                dataLength - visibleDataLength,
-                this.state.panX + dataDelta
-            ));
-            
-            this.setState({
-                panX: newPanX,
-                lastMouseX: e.clientX
-            });
+    public componentWillUnmount() {
+        if (this.svgRef.current) {
+            d3.select(this.svgRef.current).on('.zoom', null);
         }
     }
 
-    private handleMouseUp = (e: React.MouseEvent<SVGSVGElement>) => {
+    private handleZoom = (event: d3.D3ZoomEvent<SVGSVGElement, unknown>) => {
         this.setState({
-            isDragging: false
-        });
-    }
-
-    private handleMouseLeave = (e: React.MouseEvent<SVGSVGElement>) => {
-        this.setState({
-            isDragging: false
+            transform: event.transform
         });
     }
 }
@@ -197,7 +133,7 @@ export default class Waveform extends React.Component<IWaveformProps, IWaveformS
         const width = this.props.width;
         const SCALE_DB = [0, -10, -28, -90];
         // const SCALE_LINEAR_PTS = [0, 0.5, 1];
-        
+
         return <svg width={width} height={HEIGHT}
             onMouseMove={this.handleMouseMove}
             onMouseEnter={this.handleMouseEnter}
