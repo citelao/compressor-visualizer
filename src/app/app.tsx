@@ -191,6 +191,14 @@ export default class App extends React.Component<IAppProps, IAppState>
                 fn={(x) => (attenuateLinear(x))} />
         </>;
 
+        const waveformsToShow = [];
+        if (pureWaveform) {
+            waveformsToShow.push({ numbers: pureWaveform, color: "blue" });
+        }
+        if (transformedData) {
+            waveformsToShow.push({ numbers: transformedData, color: "red" });
+        }
+
         return <>
             <h1>Compressor Visualizer</h1>
 
@@ -216,17 +224,20 @@ export default class App extends React.Component<IAppProps, IAppState>
                         : "Play original"
                 }
             </button>
-            <p>Original (length {this.state.audioBuffer?.length}; load: {this.state.audioLoadTimeMs}ms)</p>
-            {/* {(maxWaveform && meanWaveform && rmsWaveform)
-                ? <Waveform width={WAVEFORM_WIDTH} numbers={[maxWaveform, meanWaveform, rmsWaveform]} />
-                : null
-            } */}
+            
+            <p>Combined Waveforms</p>
             {
-                pureWaveform
-                ? <Waveform width={WAVEFORM_WIDTH} numbers={[pureWaveform/* , meanWaveform, rmsWaveform */]} />
+                waveformsToShow.length > 0
+                ? <Waveform width={WAVEFORM_WIDTH} waveforms={waveformsToShow} />
                 : null
             }
 
+            <p>Original (length {this.state.audioBuffer?.length}; load: {this.state.audioLoadTimeMs}ms)</p>
+            {
+                pureWaveform
+                ? <Waveform width={WAVEFORM_WIDTH} waveforms={[{ numbers: pureWaveform, color: "black" }]} />
+                : null
+            }
             <button onClick={this.handlePlayModified}>
                 {this.state.transformedSound?.isPlaying() 
                     ? "Pause transformed"
@@ -237,7 +248,7 @@ export default class App extends React.Component<IAppProps, IAppState>
             </button>
             <p>Modified (load: {this.state.transformedRenderTimeMs}ms):</p>
             {(transformedData)
-                ? <Waveform width={WAVEFORM_WIDTH} numbers={[transformedData/* , transformedMeanWaveform, transformedRmsWaveform */]} />
+                ? <Waveform width={WAVEFORM_WIDTH} waveforms={[{ numbers: transformedData, color: "black" }]} />
                 : null
             }
 

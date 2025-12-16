@@ -1,12 +1,16 @@
 import React from "react";
 import * as d3 from "d3";
 
+interface IIndependentWaveform {
+    numbers: Float32Array;
+    color: string;
+}
+
 interface IWaveformProps {
-    numbers: Float32Array[];
+    waveforms: IIndependentWaveform[];
     width: number;
     height?: number;
 }
-
 
 interface IWaveformState {
     transform: d3.ZoomTransform;
@@ -41,21 +45,23 @@ export default class Waveform extends React.Component<IWaveformProps, IWaveformS
     }
 
     public render() {
-        const data = this.props.numbers[0];
         const height = this.props.height || HEIGHT;
-
+        
         const margin = { top: 20, right: 20, bottom: 20, left: 20 };
 
-        // Apply d3 transform to scales
-        const x = this.state.transform.rescaleX(
-            d3.scaleLinear([0, data.length], [margin.left, this.props.width - margin.right])
-        );
-
+        // Standardized across audio.
         const y = d3.scaleLinear([-1, 1], [height - margin.bottom, margin.top]);
 
-        const dataLine = d3.line<number>()
-            .x((d, i) => x(i))
-            .y((d) => y(d));
+        // If the data lengths differ, throw.
+        const xLength = this.props.waveforms[0].numbers.length;
+        if (this.props.waveforms.some(w => w.numbers.length !== this.props.waveforms[0].numbers.length)) {
+            throw new Error("All waveforms must have the same length");
+        }
+        
+        // Apply d3 transform to scales
+        const x = this.state.transform.rescaleX(
+            d3.scaleLinear([0, xLength], [margin.left, this.props.width - margin.right])
+        );
 
         const yTicks = y.ticks(5);
 
@@ -65,12 +71,14 @@ export default class Waveform extends React.Component<IWaveformProps, IWaveformS
 
         const isValidHover = hoveredPosition !== undefined
             && hoveredPosition >= 0
-            && hoveredPosition < data.length;
+            && hoveredPosition < xLength;
+
+        const hoveredPositions = this.props.waveforms.map(w => isValidHover ? w.numbers[hoveredPosition!] : undefined);
 
         const hoveredGroup = isValidHover
             ? <g>
                 <text x={this.state.hoverX! + 10} y={10} dominantBaseline="middle" textAnchor="start">
-                    Sample {hoveredPosition} : {data[hoveredPosition!].toFixed(4)}
+                    Sample {hoveredPosition} : {hoveredPositions.map((val, index) => val?.toFixed(4) ?? "N/A").join(", ")}
                 </text>
                 <line x1={x(hoveredPosition)} x2={x(hoveredPosition)}
                     y1={margin.top} y2={height - margin.bottom}
@@ -78,6 +86,15 @@ export default class Waveform extends React.Component<IWaveformProps, IWaveformS
              </g>
             : null;
 
+        const lines = this.props.waveforms.map((waveform, index) => {
+            const lineGenerator = d3.line<number>()
+                .x((d, i) => x(i))
+                .y((d) => y(d));
+            return <g key={index}>
+                <path d={lineGenerator(waveform.numbers)!}
+                    fill="none" stroke={waveform.color} strokeWidth={1} />
+            </g>;
+        });
 
         return <svg
             ref={this.svgRef}
@@ -98,7 +115,7 @@ export default class Waveform extends React.Component<IWaveformProps, IWaveformS
 
             <g>
                 <text x={10} y={10} dominantBaseline="middle">
-                    Zoom: {this.state.transform.k.toFixed(2)}x | Pan: {this.state.transform.x.toFixed(0)} | Samples: {data.length.toLocaleString()}
+                    Zoom: {this.state.transform.k.toFixed(2)}x | Pan: {this.state.transform.x.toFixed(0)} | Samples: {xLength.toLocaleString()}
                 </text>
             </g>
             <g name="yTicks">
@@ -112,8 +129,7 @@ export default class Waveform extends React.Component<IWaveformProps, IWaveformS
                 ))}
             </g>
             <g>
-                <path d={dataLine(data)!}
-                    fill="none" stroke="black" strokeWidth={1} />
+                {lines}
             </g>
         </svg>;
     }
@@ -127,7 +143,7 @@ export default class Waveform extends React.Component<IWaveformProps, IWaveformS
 
     public componentDidUpdate(prevProps: IWaveformProps) {
         // Update zoom extents if data length changed
-        if (prevProps.numbers[0]?.length !== this.props.numbers[0]?.length) {
+        if (prevProps.waveforms[0]?.numbers.length !== this.props.waveforms[0]?.numbers.length) {
             this.updateZoomExtents();
         }
     }
@@ -139,8 +155,8 @@ export default class Waveform extends React.Component<IWaveformProps, IWaveformS
     }
 
     private updateZoomExtents() {
-        if (this.props.numbers[0]) {
-            const dataLength = this.props.numbers[0].length;
+        if (this.props.waveforms[0]) {
+            const dataLength = this.props.waveforms[0].numbers.length;
             const margin = { top: 20, right: 20, bottom: 20, left: 20 };
             const plotWidth = this.props.width - margin.left - margin.right;
 
