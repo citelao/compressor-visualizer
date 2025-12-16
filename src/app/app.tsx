@@ -22,9 +22,6 @@ interface IAppState {
     transformedSound: Sound | null,
 
     compressor: ICompressorSettings,
-
-    samples: number, // number of samples to visualize
-    size: number, // scope of the audio to view
 }
 
 export default class App extends React.Component<IAppProps, IAppState>
@@ -53,9 +50,6 @@ export default class App extends React.Component<IAppProps, IAppState>
                 attack: .003,
                 release: .25
             },
-
-            samples: 500,
-            size: 500
         };
     }
 
@@ -136,34 +130,11 @@ export default class App extends React.Component<IAppProps, IAppState>
 
     public render() {
         const channelData = this.state.audioBuffer?.getChannelData(0);
-        const samples = this.state.samples;
         const WAVEFORM_WIDTH = 1000;
 
-        const offset = 12000;
-        const size = this.state.size;
-        console.log(`Offset: ${offset}; Size: ${size}; Samples: ${samples}; Group size: ${getGroupSize(size, samples)}`);
-        const viewWidthS = (this.state.audioBuffer)
-            ? size / this.state.audioBuffer.sampleRate
-            : 0;
-        const DIGITS = 3;
-        const truncatedViewWidthS = Math.trunc(viewWidthS * Math.pow(10, DIGITS)) / Math.pow(10, DIGITS);
-        console.log(`Viewing: ${truncatedViewWidthS}s`)
-
         const calcTimer = new Timer();
-        let maxWaveform;
-        let meanWaveform;
-        let rmsWaveform;
-        let pureWaveform;
-        if (channelData) {
-            const subpart = channelData.subarray(offset, offset + size);
-            maxWaveform = absMaxSample(subpart, samples);
-            meanWaveform = absMeanSample(subpart, samples);
-            rmsWaveform = rmsSample(subpart, samples);
 
-            pureWaveform = channelData;
-            // console.log(subpart);
-        }
-
+        const pureWaveform = channelData;
         const transformedData = this.state.transformedBuffer?.getChannelData(0);
         const calculationTime = calcTimer.stop();
 
@@ -228,7 +199,7 @@ export default class App extends React.Component<IAppProps, IAppState>
             <p>Combined Waveforms</p>
             {
                 waveformsToShow.length > 0
-                ? <Waveform width={WAVEFORM_WIDTH} waveforms={waveformsToShow} />
+                ? <Waveform width={WAVEFORM_WIDTH} waveforms={waveformsToShow} sampleRate={this.state.audioBuffer?.sampleRate} />
                 : null
             }
 
@@ -254,16 +225,6 @@ export default class App extends React.Component<IAppProps, IAppState>
 
             <fieldset>
                 <legend>Controls</legend>
-
-                <label>
-                    View resolution
-                    <input type="range" onChange={this.handleResolutionChange} value={Math.log2(samples)} min={1} max={Math.log2(size)} />
-                </label>
-
-                <label>
-                    View size
-                    <input type="range" onChange={this.handleSizeChange} value={Math.log2(size)} min={1} max={Math.log2(this.state.audioBuffer?.length || 0)} />
-                </label>
 
                 <p>threshold</p>
                 <label>
