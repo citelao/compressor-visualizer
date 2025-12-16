@@ -114,6 +114,7 @@ export default class App extends React.Component<IAppProps, IAppState>
                 compressor.attack.value = this.state.compressor.attack;
                 compressor.release.value = this.state.compressor.release;
 
+                // TODO: is this makeup gain correct?
                 const gain = ctx.createGain();
                 // console.log(compressionCurve(0.0), compressionCurve(0.03), compressionCurve(0.3), compressionCurve(0.3))
                 const fullMakeupGain = 1 / Compressor.compressDb(1.0, this.state.compressor);
@@ -164,15 +165,6 @@ export default class App extends React.Component<IAppProps, IAppState>
         }
 
         const transformedData = this.state.transformedBuffer?.getChannelData(0);
-        let transformedMaxWaveform;
-        let transformedMeanWaveform;
-        let transformedRmsWaveform;
-        if (transformedData) {
-            const subpart = transformedData.subarray(offset, offset + size);
-            transformedMaxWaveform = absMaxSample(subpart, samples);
-            transformedMeanWaveform = absMeanSample(subpart, samples);
-            transformedRmsWaveform = rmsSample(subpart, samples);
-        }
         const calculationTime = calcTimer.stop();
 
         const getUpdatedCompressorSettings = (partial: Partial<ICompressorSettings>): ICompressorSettings => {
@@ -189,26 +181,14 @@ export default class App extends React.Component<IAppProps, IAppState>
         };
         const compressorGraphs = <>
             <p>Compressor curve &amp; attenuation</p>
-            {/* <Graph height={300} width={300}
-                x1={0} x2={1}
-                y1={0} y2={1}
-                fn={(x) => Compressor.compressLinear(Math.abs(x), this.state.compressor)} /> */}
             <Graph2 height={300} width={300}
                 xRange={[0, 1]}
                 yRange={[0, 1]}
                 fn={(x) => Compressor.compressLinear(Math.abs(x), this.state.compressor)} />
-            {/* <Graph height={300} width={300}
-                x1={0} x2={1}
-                y1={0} y2={1}
-                fn={(x) => (attenuateLinear(x))} /> */}
             <Graph2 height={300} width={300}
                 xRange={[0, 1]}
                 yRange={[0, 1]}
                 fn={(x) => (attenuateLinear(x))} />
-            {/* <Graph height={300} width={300}
-                x1={-2} x2={2}
-                y1={-2} y2={10}
-                fn={(x) => x ** 2} /> */}
         </>;
 
         return <>
@@ -243,10 +223,6 @@ export default class App extends React.Component<IAppProps, IAppState>
                 : null
             }
 
-            {/* {(pureWaveform)
-                ? <Waveform width={WAVEFORM_WIDTH} numbers={[pureWaveform]} />
-                : null
-            } */}
             <button onClick={this.handlePlayModified}>
                 {this.state.transformedSound?.isPlaying() 
                     ? "Pause transformed"
@@ -256,10 +232,6 @@ export default class App extends React.Component<IAppProps, IAppState>
                 }
             </button>
             <p>Modified (load: {this.state.transformedRenderTimeMs}ms):</p>
-            {/* {(transformedMaxWaveform && transformedMeanWaveform && transformedRmsWaveform)
-                ? <Waveform width={WAVEFORM_WIDTH} numbers={[transformedMaxWaveform, transformedMeanWaveform, transformedRmsWaveform]} />
-                : null
-            } */}
             {(transformedData)
                 ? <Waveform2 width={WAVEFORM_WIDTH} numbers={[transformedData/* , transformedMeanWaveform, transformedRmsWaveform */]} />
                 : null
@@ -404,9 +376,6 @@ export default class App extends React.Component<IAppProps, IAppState>
         }
     }
 }
-
-// const app = document.getElementById("app");
-// ReactDOM.render(<App />, app);
 
 async function fetchAudioBuffer(uri: string): Promise<AudioBuffer> {
     return new Promise<AudioBuffer>((resolve, reject) => {

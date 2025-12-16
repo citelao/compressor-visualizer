@@ -69,7 +69,7 @@ export class Graph2 extends React.Component<IGraph2Props> {
         // Guarantee square ticks.
         const xTicks = d3.ticks(this.props.xRange[0], this.props.xRange[1], 5);
         const yTicks = d3.ticks(this.props.yRange[0], this.props.yRange[1], 5);
-        console.log(xTicks, yTicks);
+        // console.log(xTicks, yTicks);
 
         // Transform ticks back to input domain for proper placement
         const xTickPositions = xTicks.map(tick => {
