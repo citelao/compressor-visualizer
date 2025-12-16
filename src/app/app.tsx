@@ -224,7 +224,7 @@ export default class App extends React.Component<IAppProps, IAppState>
                         value={this.state.compressor.threshold}
                         min={-100}
                         max={0}
-                        step={5}
+                        step={1}
                         onChange={(e) => this.setState({ compressor: getUpdatedCompressorSettings({ threshold: e.target.valueAsNumber }) })} />
                 </label>
                 <button onClick={() => this.setState({ compressor: getUpdatedCompressorSettings({ threshold: -90 }) })}>-90</button>
