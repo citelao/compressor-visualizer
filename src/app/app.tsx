@@ -2,7 +2,7 @@ import React from "react";
 import ReactDOM from "react-dom";
 import Compressor, { type ICompressorSettings } from "./Compressor";
 import Db from "./Db";
-import Graph, { Graph2 } from "./Graph";
+import { CompressorGraph, Graph2 } from "./Graph";
 import Sound from "./Sound";
 import Timer from "./Timer";
 import Waveform from "./Waveform";
@@ -160,6 +160,8 @@ export default class App extends React.Component<IAppProps, IAppState>
                 xRange={[0, 1]}
                 yRange={[0, 1]}
                 fn={(x) => (attenuateLinear(x))} />
+            <CompressorGraph height={300} width={300}
+                compressorSettings={this.state.compressor} />
         </>;
 
         const waveformsToShow = [];

@@ -1,5 +1,7 @@
 import React, { type JSX, type ReactSVGElement } from "react";
 import * as d3 from "d3";
+import type { ICompressorSettings } from "./Compressor";
+import Compressor from "./Compressor";
 
 interface IGraphProps {
     height: number,
@@ -110,57 +112,76 @@ export class Graph2 extends React.Component<IGraph2Props> {
     }
 }
 
-export default class Graph extends React.Component<IGraphProps> {
-    public render() {
-        const sampleCount = this.props.width;
-        const rangeX = (this.props.x2 - this.props.x1);
-        const offsetX = this.props.x1;
-        const pts = [];
-        for (let i = 0; i < sampleCount; i++) {
-            const elapsedPercent = i / sampleCount;
-            const x = offsetX + (elapsedPercent * rangeX);
-            const y = this.props.fn(x);
-            pts.push(this.truePointToDrawPoint({ x, y }));
-        }
-        // console.log(pts);
+export interface ICompressorGraphProps {
+    height: number,
+    width: number,
+    compressorSettings: ICompressorSettings
+}
 
-        // const origin = this.truePointToDrawPoint({ x: 0, y: 0 });
-        const xOrigin = [
-            this.truePointToDrawPoint({ x: 0, y: this.props.y1 }),
-            this.truePointToDrawPoint({ x: 0, y: this.props.y2 })
-        ];
-        const yOrigin = [
-            this.truePointToDrawPoint({ x: this.props.x1, y: 0 }),
-            this.truePointToDrawPoint({ x: this.props.x2, y: 0 })
-        ];
+export class CompressorGraph extends React.Component<ICompressorGraphProps> {
+
+    public render() {
+        const margin = { top: 20, right: 20, bottom: 20, left: 20 };
+
+        // Both axes scale from -100dB to 0dB
+        const x = d3.scaleLinear([-100, 0], [margin.left, this.props.width - margin.right]);
+        const y = d3.scaleLinear([-100, 0], [this.props.height - margin.bottom, margin.top]);
+        const xTicks = x.ticks(5);
+        const yTicks = y.ticks(5);
+
+        const data: number[] = [];
+        const sampleCount = this.props.width;
+        const dataToX = d3.scaleLinear([0, sampleCount], [-100, 0]);
+        for (let i = 0; i < sampleCount; i++) {
+            const inputDb = dataToX(i);
+            console.log(inputDb);
+            const outputDb = Compressor.compressDb(inputDb, this.props.compressorSettings);
+            data.push(outputDb);
+        }
+
+
+        const dataLine = d3.line<number>()
+            .x((d, i) => x(dataToX(i)))
+            .y((d) => y(d));
 
         return <svg height={this.props.height} width={this.props.width}>
-            {/* Grid */}
-            <PointLine p1={xOrigin[0]} p2={xOrigin[1]} stroke="black" opacity="0.2" />
-            <PointLine p1={yOrigin[0]} p2={yOrigin[1]} stroke="black" opacity="0.2" />
-
-            <polyline
-                stroke="black"
+            <path
+                stroke="blue"
                 fill="none"
-                points={pts.map((pt) => `${pt.x},${pt.y}`).join(" ")} />
-        </svg>
-    }
+                d={dataLine(data)!} />
+            <text x={10} y={10} dominantBaseline="middle" textAnchor="start">
+                Compressor Curve
+            </text>
 
-    private truePointToDrawPoint(pt: Point): Point {
-        const rangeX = (this.props.x2 - this.props.x1);
-        const offsetX = this.props.x1;
-        const rangeY = (this.props.y2 - this.props.y1);
-        const offsetY = this.props.y1;
+            {/* x axis */}
+            <g>
+                <line x1={margin.left} x2={this.props.width - margin.right}
+                    y1={this.props.height - margin.bottom} y2={this.props.height - margin.bottom}
+                    stroke="black" strokeOpacity={0.5} />
+                {xTicks.map((tick, i) => (
+                    <g key={i}>
+                        <line x1={x(tick)} x2={x(tick)}
+                            y1={this.props.height - margin.bottom} y2={this.props.height - margin.bottom + 5}
+                            stroke="black" strokeOpacity={0.5} />
+                        <text stroke="black" x={x(tick)} y={this.props.height - margin.bottom + 5} dominantBaseline="hanging" textAnchor="middle">{tick.toFixed(1)}</text>
+                    </g>
+                ))}
+             </g>
 
-        const unoffsetPt: Point = { x: pt.x - offsetX, y: pt.y - offsetY };
-        const percentagePt: Point = {
-            x: unoffsetPt.x / rangeX,
-            y: unoffsetPt.y / rangeY
-        };
-
-        return {
-            x: percentagePt.x * this.props.width,
-            y: this.props.height - (percentagePt.y * this.props.height)
-        };
+            {/* y axis */}
+            <g>
+                <line x1={margin.left} x2={margin.left}
+                    y1={margin.top} y2={this.props.height - margin.bottom}
+                    stroke="black" strokeOpacity={0.5} />
+                {yTicks.map((tick, i) => (
+                    <g key={i}>
+                        <line x1={margin.left - 5} x2={margin.left}
+                            y1={y(tick)} y2={y(tick)}
+                            stroke="black" strokeOpacity={0.5} />
+                        <text stroke="black" x={margin.left + 5} y={y(tick)} dominantBaseline="middle" textAnchor="start">{tick.toFixed(1)}</text>
+                    </g>
+                ))}
+            </g>
+        </svg>;
     }
 }
