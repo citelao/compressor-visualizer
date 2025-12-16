@@ -5,7 +5,7 @@ import Db from "./Db";
 import Graph, { Graph2 } from "./Graph";
 import Sound from "./Sound";
 import Timer from "./Timer";
-import Waveform, { Waveform2 } from "./Waveform";
+import Waveform from "./Waveform";
 
 interface IAppProps {}
 
@@ -223,7 +223,7 @@ export default class App extends React.Component<IAppProps, IAppState>
             } */}
             {
                 pureWaveform
-                ? <Waveform2 width={WAVEFORM_WIDTH} numbers={[pureWaveform/* , meanWaveform, rmsWaveform */]} />
+                ? <Waveform width={WAVEFORM_WIDTH} numbers={[pureWaveform/* , meanWaveform, rmsWaveform */]} />
                 : null
             }
 
@@ -237,7 +237,7 @@ export default class App extends React.Component<IAppProps, IAppState>
             </button>
             <p>Modified (load: {this.state.transformedRenderTimeMs}ms):</p>
             {(transformedData)
-                ? <Waveform2 width={WAVEFORM_WIDTH} numbers={[transformedData/* , transformedMeanWaveform, transformedRmsWaveform */]} />
+                ? <Waveform width={WAVEFORM_WIDTH} numbers={[transformedData/* , transformedMeanWaveform, transformedRmsWaveform */]} />
                 : null
             }
 
