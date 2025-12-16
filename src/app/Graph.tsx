@@ -42,6 +42,8 @@ interface IGraph2Props {
     xRange: [number, number],
     yRange: [number, number],
     fn: (x: number) => number,
+
+    title?: string
 }
 
 export class Graph2 extends React.Component<IGraph2Props> {
@@ -97,7 +99,7 @@ export class Graph2 extends React.Component<IGraph2Props> {
                         <line x1={margin.left} x2={this.props.width - margin.right}
                             y1={y(tick)} y2={y(tick)}
                             stroke="black" strokeOpacity={0.2} />
-                        <text stroke="black" x={margin.left} y={y(tick)} dominantBaseline="middle" textAnchor="end">{tick.toFixed(1)}</text>
+                        <text stroke="black" x={margin.left + 5} y={y(tick)} dominantBaseline="middle" textAnchor="end">{tick.toFixed(1)}</text>
                     </g>
                 ))}
             </g>
@@ -106,7 +108,7 @@ export class Graph2 extends React.Component<IGraph2Props> {
                 fill="none"
                 d={dataLine(data)!} />
             <text x={10} y={10} dominantBaseline="middle" textAnchor="start">
-                Samples: {data.length.toLocaleString()}
+                {/* Samples: {data.length.toLocaleString()} |  */}{this.props.title}
             </text>
         </svg>;
     }

@@ -155,11 +155,18 @@ export default class App extends React.Component<IAppProps, IAppState>
             <Graph2 height={300} width={300}
                 xRange={[0, 1]}
                 yRange={[0, 1]}
+                title="Compressor Curve (linear)"
                 fn={(x) => Compressor.compressLinear(Math.abs(x), this.state.compressor)} />
             <Graph2 height={300} width={300}
                 xRange={[0, 1]}
                 yRange={[0, 1]}
+                title="Attenuation (linear)"
                 fn={(x) => (attenuateLinear(x))} />
+            <Graph2 height={300} width={300}
+                xRange={[-100, 0]}
+                yRange={[-100, 0]}
+                title="Attenuation (dB)"
+                fn={(x) => (Db.linearToDb(attenuateLinear(Db.dbToLinear(x))))} />
             <CompressorGraph height={300} width={300}
                 compressorSettings={this.state.compressor} />
         </>;
