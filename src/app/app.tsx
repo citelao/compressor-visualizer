@@ -206,7 +206,7 @@ export default class App extends React.Component<IAppProps, IAppState>
             <p>Original (length {this.state.audioBuffer?.length}; load: {this.state.audioLoadTimeMs}ms)</p>
             {
                 pureWaveform
-                ? <Waveform width={WAVEFORM_WIDTH} waveforms={[{ numbers: pureWaveform, color: "black" }]} />
+                ? <Waveform width={WAVEFORM_WIDTH} waveforms={[{ numbers: pureWaveform, color: "black" }]} sampleRate={this.state.audioBuffer?.sampleRate} />
                 : null
             }
             <button onClick={this.handlePlayModified}>
@@ -219,7 +219,7 @@ export default class App extends React.Component<IAppProps, IAppState>
             </button>
             <p>Modified (load: {this.state.transformedRenderTimeMs}ms):</p>
             {(transformedData)
-                ? <Waveform width={WAVEFORM_WIDTH} waveforms={[{ numbers: transformedData, color: "black" }]} />
+                ? <Waveform width={WAVEFORM_WIDTH} waveforms={[{ numbers: transformedData, color: "black" }]} sampleRate={this.state.audioBuffer?.sampleRate} />
                 : null
             }
 
@@ -281,22 +281,6 @@ export default class App extends React.Component<IAppProps, IAppState>
             {/* Debug compressor visualize */}
             {compressorGraphs}
         </>;
-    }
-    
-    private handleResolutionChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const resolution = Math.pow(2, e.target.valueAsNumber);
-
-        this.setState({
-            samples: resolution
-        });
-    }
-
-    private handleSizeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const size = Math.pow(2, e.target.valueAsNumber);
-
-        this.setState({
-            size: size
-        });
     }
 
     private handlePlayOriginal = () => {

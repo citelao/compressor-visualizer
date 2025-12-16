@@ -8,6 +8,7 @@ interface IIndependentWaveform {
 
 interface IWaveformProps {
     waveforms: IIndependentWaveform[];
+    sampleRate?: number;
     width: number;
     height?: number;
 }
@@ -34,13 +35,13 @@ export default class Waveform extends React.Component<IWaveformProps, IWaveformS
         }
 
         this.zoomBehavior = d3.zoom<SVGSVGElement, unknown>()
-            .filter((event) => {
-                // Only allow zoom with shift+wheel, and pan with drag
-                if (event.type === 'wheel') {
-                    return event.shiftKey;
-                }
-                return event.type !== 'wheel';
-            })
+            // .filter((event) => {
+            //     // Only allow zoom with shift+wheel, and pan with drag
+            //     if (event.type === 'wheel') {
+            //         return event.shiftKey;
+            //     }
+            //     return event.type !== 'wheel';
+            // })
             .on('zoom', this.handleZoom);
     }
 
@@ -65,8 +66,13 @@ export default class Waveform extends React.Component<IWaveformProps, IWaveformS
 
         const yTicks = y.ticks(5);
 
+        const viewWidthS = this.props.sampleRate ? xLength / this.props.sampleRate : undefined;
+
         const hoveredPosition = this.state.hoverX !== undefined
             ? Math.floor(x.invert(this.state.hoverX))
+            : undefined;
+        const hoveredS = this.props.sampleRate && hoveredPosition !== undefined
+            ? ` (${(hoveredPosition / this.props.sampleRate).toFixed(2)}s)`
             : undefined;
 
         const isValidHover = hoveredPosition !== undefined
@@ -78,7 +84,7 @@ export default class Waveform extends React.Component<IWaveformProps, IWaveformS
         const hoveredGroup = isValidHover
             ? <g>
                 <text x={this.state.hoverX! + 10} y={10} dominantBaseline="middle" textAnchor="start">
-                    Sample {hoveredPosition} : {hoveredPositions.map((val, index) => val?.toFixed(4) ?? "N/A").join(", ")}
+                    Sample {hoveredPosition}{hoveredS} : {hoveredPositions.map((val, index) => val?.toFixed(4) ?? "N/A").join(", ")}
                 </text>
                 <line x1={x(hoveredPosition)} x2={x(hoveredPosition)}
                     y1={margin.top} y2={height - margin.bottom}
@@ -115,7 +121,7 @@ export default class Waveform extends React.Component<IWaveformProps, IWaveformS
 
             <g>
                 <text x={10} y={10} dominantBaseline="middle">
-                    Zoom: {this.state.transform.k.toFixed(2)}x | Pan: {this.state.transform.x.toFixed(0)} | Samples: {xLength.toLocaleString()}
+                    Zoom: {this.state.transform.k.toFixed(2)}x | Pan: {this.state.transform.x.toFixed(0)} | Samples: {xLength.toLocaleString()} | Duration: {viewWidthS?.toFixed(2)}s
                 </text>
             </g>
             <g name="yTicks">
