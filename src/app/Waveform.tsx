@@ -32,7 +32,6 @@ export class Waveform2 extends React.Component<IWaveformProps, IWaveform2State> 
         }
 
         this.zoomBehavior = d3.zoom<SVGSVGElement, unknown>()
-            .scaleExtent([0.1, 20])
             .filter((event) => {
                 // Only allow zoom with shift+wheel, and pan with drag
                 if (event.type === 'wheel') {
@@ -77,7 +76,7 @@ export class Waveform2 extends React.Component<IWaveformProps, IWaveform2State> 
 
             <g>
                 <text x={10} y={10} dominantBaseline="middle">
-                    Zoom: {this.state.transform.k.toFixed(2)}x | Pan: {this.state.transform.x.toFixed(0)}
+                    Zoom: {this.state.transform.k.toFixed(2)}x | Pan: {this.state.transform.x.toFixed(0)} | Samples: {data.length.toLocaleString()}
                 </text>
             </g>
             <g name="yTicks">
@@ -98,14 +97,43 @@ export class Waveform2 extends React.Component<IWaveformProps, IWaveform2State> 
     }
 
     public componentDidMount() {
+        this.updateZoomExtents();
         if (this.svgRef.current) {
             d3.select(this.svgRef.current).call(this.zoomBehavior);
+        }
+    }
+
+    public componentDidUpdate(prevProps: IWaveformProps) {
+        // Update zoom extents if data length changed
+        if (prevProps.numbers[0]?.length !== this.props.numbers[0]?.length) {
+            this.updateZoomExtents();
         }
     }
 
     public componentWillUnmount() {
         if (this.svgRef.current) {
             d3.select(this.svgRef.current).on('.zoom', null);
+        }
+    }
+
+    private updateZoomExtents() {
+        if (this.props.numbers[0]) {
+            const dataLength = this.props.numbers[0].length;
+            const margin = { top: 20, right: 20, bottom: 20, left: 20 };
+            const plotWidth = this.props.width - margin.left - margin.right;
+            
+            // Minimum zoom: show entire waveform (with some padding)
+            const minZoom = 0.1;
+            
+            // Maximum zoom: allow at least 2 pixels per sample for clear individual sample visibility
+            // This means each sample will be at least 2 pixels wide when fully zoomed in
+            const pixelsPerSample = 2;
+            const maxZoom = (dataLength * pixelsPerSample) / plotWidth;
+            
+            // Ensure maxZoom is at least 1 and reasonable upper bound
+            const clampedMaxZoom = Math.max(1, Math.min(maxZoom, 1000));
+            
+            this.zoomBehavior.scaleExtent([minZoom, clampedMaxZoom]);
         }
     }
 
