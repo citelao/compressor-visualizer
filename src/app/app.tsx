@@ -189,17 +189,21 @@ export default class App extends React.Component<IAppProps, IAppState>
         };
         const compressorGraphs = <>
             <p>Compressor curve &amp; attenuation</p>
-            <Graph height={300} width={300}
+            {/* <Graph height={300} width={300}
                 x1={0} x2={1}
                 y1={0} y2={1}
-                fn={(x) => Compressor.compressLinear(Math.abs(x), this.state.compressor)} />
+                fn={(x) => Compressor.compressLinear(Math.abs(x), this.state.compressor)} /> */}
             <Graph2 height={300} width={300}
                 xRange={[0, 1]}
                 yRange={[0, 1]}
                 fn={(x) => Compressor.compressLinear(Math.abs(x), this.state.compressor)} />
-            <Graph height={300} width={300}
+            {/* <Graph height={300} width={300}
                 x1={0} x2={1}
                 y1={0} y2={1}
+                fn={(x) => (attenuateLinear(x))} /> */}
+            <Graph2 height={300} width={300}
+                xRange={[0, 1]}
+                yRange={[0, 1]}
                 fn={(x) => (attenuateLinear(x))} />
             {/* <Graph height={300} width={300}
                 x1={-2} x2={2}

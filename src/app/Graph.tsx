@@ -60,23 +60,32 @@ export class Graph2 extends React.Component<IGraph2Props> {
         const x = d3.scaleLinear([0, data.length], [margin.left, this.props.width - margin.right]);
         const xInput = d3.scaleLinear([0, data.length], this.props.xRange);
         const y = d3.scaleLinear(this.props.yRange, [this.props.height - margin.bottom, margin.top]);
-        console.log(d3.extent(data));
+        // console.log(d3.extent(data));
 
         const dataLine = d3.line<number>()
             .x((d, i) => x(i))
             .y((d) => y(d));
 
-        const xTicks = x.ticks(10);
-        const yTicks = y.ticks(10);
+        // Guarantee square ticks.
+        const xTicks = d3.ticks(this.props.xRange[0], this.props.xRange[1], 5);
+        const yTicks = d3.ticks(this.props.yRange[0], this.props.yRange[1], 5);
+        console.log(xTicks, yTicks);
+
+        // Transform ticks back to input domain for proper placement
+        const xTickPositions = xTicks.map(tick => {
+            // Find the corresponding index in data for this tick
+            const percent = (tick - this.props.xRange[0]) / rangeX;
+            return percent * data.length;
+        });
 
         return <svg height={this.props.height} width={this.props.width}>
             <g>
                 {xTicks.map((tick, i) => (
                     <g key={i}>
-                        <line x1={x(tick)} x2={x(tick)}
+                        <line x1={x(xTickPositions[i])} x2={x(xTickPositions[i])}
                             y1={margin.top} y2={this.props.height - margin.bottom}
                             stroke="black" strokeOpacity={0.2} />
-                        <text stroke="black" x={x(tick)} y={this.props.height - margin.bottom} dominantBaseline="hanging" textAnchor="middle">{xInput(tick).toFixed(1)}</text>
+                        <text stroke="black" x={x(xTickPositions[i])} y={this.props.height - margin.bottom} dominantBaseline="hanging" textAnchor="middle">{tick.toFixed(1)}</text>
                     </g>
                 ))}
             </g>
