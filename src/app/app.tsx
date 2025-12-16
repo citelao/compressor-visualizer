@@ -22,6 +22,7 @@ interface IAppState {
     transformedSound: Sound | null,
 
     compressor: ICompressorSettings,
+    shouldRemoveMakeupGain: boolean,
 }
 
 export default class App extends React.Component<IAppProps, IAppState>
@@ -50,6 +51,7 @@ export default class App extends React.Component<IAppProps, IAppState>
                 attack: .003,
                 release: .25
             },
+            shouldRemoveMakeupGain: true,
         };
     }
 
@@ -98,7 +100,9 @@ export default class App extends React.Component<IAppProps, IAppState>
         const ratioChanged = this.state.compressor.ratio != prevState.compressor.ratio;
         const attackChanged = this.state.compressor.attack != prevState.compressor.attack;
         const releaseChanged = this.state.compressor.release != prevState.compressor.release;
-        if (!hasRenderedTransform || thresholdChanged || ratioChanged || attackChanged || releaseChanged) {
+        const shouldRemoveMakeupGainChanged = this.state.shouldRemoveMakeupGain != prevState.shouldRemoveMakeupGain;
+
+        if (!hasRenderedTransform || thresholdChanged || ratioChanged || attackChanged || releaseChanged || shouldRemoveMakeupGainChanged) {
             const timer = new Timer();
             const effectsBuffer = await renderEffectsChain(this.state.audioBuffer!, (ctx, buf) => {
                 const compressor = ctx.createDynamicsCompressor();
@@ -112,7 +116,10 @@ export default class App extends React.Component<IAppProps, IAppState>
                 const gain = ctx.createGain();
                 const makeupGainLinear = Compressor.makeupGainLinear(this.state.compressor);
                 const invertMakeupGain = 1 / makeupGainLinear;
-                gain.gain.value = invertMakeupGain;
+
+                if (this.state.shouldRemoveMakeupGain) {
+                    gain.gain.value = invertMakeupGain;
+                }
 
                 const fullRangeGainDb = Compressor.fullRangeGainDb(this.state.compressor);
                 const fullRangeGainLinear = Compressor.fullRangeGainLinear(this.state.compressor);
@@ -120,7 +127,8 @@ export default class App extends React.Component<IAppProps, IAppState>
                 const invertedDb = Db.linearToDb(invertMakeupGain);
                 let logString = `Default makeup gain: ${makeupGainDb.toFixed(2)}dB (${makeupGainLinear.toFixed(2)} linear)\n`;
                 logString += `\tFull range gain: ${fullRangeGainDb.toFixed(2)}dB (${fullRangeGainLinear.toFixed(2)} linear)\n`;
-                logString += `=> Applied inverted makeup gain: ${invertedDb.toFixed(2)}dB (${invertMakeupGain.toFixed(2)} linear)`;
+                const appliedString = this.state.shouldRemoveMakeupGain ? "Applied" : "(Did not apply))";
+                logString += `=> ${appliedString} inverted makeup gain: ${invertedDb.toFixed(2)}dB (${invertMakeupGain.toFixed(2)} linear)`;
                 console.log(logString);
 
                 return buf.connect(compressor).connect(gain);
@@ -277,8 +285,14 @@ export default class App extends React.Component<IAppProps, IAppState>
                         step={0.1}
                         onChange={(e) => this.setState({ compressor: getUpdatedCompressorSettings({ release: e.target.valueAsNumber }) })} />
                 </label>
-                
+
                 <p>gain</p>
+                <label>
+                    <input type="checkbox"
+                        checked={this.state.shouldRemoveMakeupGain}
+                        onChange={(e) => this.setState({ shouldRemoveMakeupGain: e.target.checked })} />
+                    Remove makeup gain
+                </label>
             </fieldset>
 
             {/* Debug compressor visualize */}
