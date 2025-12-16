@@ -129,16 +129,20 @@ export class CompressorGraph extends React.Component<ICompressorGraphProps> {
         const xTicks = x.ticks(5);
         const yTicks = y.ticks(5);
 
+        // Key positions
+        const threshold = this.props.compressorSettings.threshold;
+        const kneeStartX = x(threshold);
+        const kneeEnd = Compressor.calculateKneeEndDb(this.props.compressorSettings);
+        const kneeEndX = x(kneeEnd);
+
         const data: number[] = [];
         const sampleCount = this.props.width;
         const dataToX = d3.scaleLinear([0, sampleCount], [-100, 0]);
         for (let i = 0; i < sampleCount; i++) {
             const inputDb = dataToX(i);
-            console.log(inputDb);
             const outputDb = Compressor.compressDb(inputDb, this.props.compressorSettings);
             data.push(outputDb);
         }
-
 
         const dataLine = d3.line<number>()
             .x((d, i) => x(dataToX(i)))
@@ -150,8 +154,24 @@ export class CompressorGraph extends React.Component<ICompressorGraphProps> {
                 fill="none"
                 d={dataLine(data)!} />
             <text x={10} y={10} dominantBaseline="middle" textAnchor="start">
-                Compressor Curve
+                Compressor Curve (dB)
             </text>
+
+            {/* Draw the key positions */}
+            <g>
+                <text x={kneeStartX} y={margin.top + 15} textAnchor="middle" fill="red">
+                    Threshold ({threshold} dB)
+                </text>
+                <PointLine p1={{x: kneeStartX, y: margin.top}} p2={{x: kneeStartX, y: this.props.height - margin.bottom}}
+                    stroke="red" strokeDasharray="4 2" />
+            </g>
+            <g>
+                <text x={kneeEndX} y={margin.top + 35} textAnchor="middle" fill="blue">
+                    Knee End ({kneeEnd} dB)
+                </text>
+                <PointLine p1={{x: kneeEndX, y: margin.top}} p2={{x: kneeEndX, y: this.props.height - margin.bottom}}
+                    stroke="blue" strokeDasharray="4 2" />
+            </g>
 
             {/* x axis */}
             <g>
