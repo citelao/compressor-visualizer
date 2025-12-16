@@ -1,4 +1,5 @@
 import React, { type JSX, type ReactSVGElement } from "react";
+import * as d3 from "d3";
 
 interface IGraphProps {
     height: number,
@@ -30,6 +31,74 @@ function PointLine(props: IPointLineProps & React.SVGProps<SVGLineElement>): JSX
         y2={p2.y}
         {...remaining}
         />;
+}
+
+interface IGraph2Props {
+    height: number,
+    width: number,
+
+    xRange: [number, number],
+    yRange: [number, number],
+    fn: (x: number) => number,
+}
+
+export class Graph2 extends React.Component<IGraph2Props> {
+    public render() {
+        const margin = { top: 20, right: 20, bottom: 20, left: 20 };
+
+        const data: number[] = [];
+        const sampleCount = this.props.width;
+        const rangeX = (this.props.xRange[1] - this.props.xRange[0]);
+        const offsetX = this.props.xRange[0];
+        for (let i = 0; i < sampleCount; i++) {
+            const elapsedPercent = i / sampleCount;
+            const xVal = offsetX + (elapsedPercent * rangeX);
+            const yVal = this.props.fn(xVal);
+            data.push(yVal);
+        }
+
+        const x = d3.scaleLinear([0, data.length], [margin.left, this.props.width - margin.right]);
+        const xInput = d3.scaleLinear([0, data.length], this.props.xRange);
+        const y = d3.scaleLinear(this.props.yRange, [this.props.height - margin.bottom, margin.top]);
+        console.log(d3.extent(data));
+
+        const dataLine = d3.line<number>()
+            .x((d, i) => x(i))
+            .y((d) => y(d));
+
+        const xTicks = x.ticks(10);
+        const yTicks = y.ticks(10);
+
+        return <svg height={this.props.height} width={this.props.width}>
+            <g>
+                {xTicks.map((tick, i) => (
+                    <g key={i}>
+                        <line x1={x(tick)} x2={x(tick)}
+                            y1={margin.top} y2={this.props.height - margin.bottom}
+                            stroke="black" strokeOpacity={0.2} />
+                        <text stroke="black" x={x(tick)} y={this.props.height - margin.bottom} dominantBaseline="hanging" textAnchor="middle">{xInput(tick).toFixed(1)}</text>
+                    </g>
+                ))}
+            </g>
+            <g>
+                {yTicks.map((tick, i) => (
+                    <g key={i}>
+                        <line x1={margin.left} x2={this.props.width - margin.right}
+                            y1={y(tick)} y2={y(tick)}
+                            stroke="black" strokeOpacity={0.2} />
+                        <text stroke="black" x={margin.left} y={y(tick)} dominantBaseline="middle" textAnchor="end">{tick.toFixed(1)}</text>
+                    </g>
+                ))}
+            </g>
+            <path
+                stroke="black"
+                fill="none"
+                d={dataLine(data)!} />
+            <text x={10} y={10} dominantBaseline="middle" textAnchor="start">
+                Samples: {data.length.toLocaleString()}
+            </text>
+        </svg>;
+    }
 }
 
 export default class Graph extends React.Component<IGraphProps> {
