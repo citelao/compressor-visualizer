@@ -195,20 +195,7 @@ export default class App extends React.Component<IAppProps, IAppState>
                         : "Play original"
                 }
             </button>
-            
-            <p>Combined Waveforms</p>
-            {
-                waveformsToShow.length > 0
-                ? <Waveform width={WAVEFORM_WIDTH} waveforms={waveformsToShow} sampleRate={this.state.audioBuffer?.sampleRate} />
-                : null
-            }
 
-            <p>Original (length {this.state.audioBuffer?.length}; load: {this.state.audioLoadTimeMs}ms)</p>
-            {
-                pureWaveform
-                ? <Waveform width={WAVEFORM_WIDTH} waveforms={[{ numbers: pureWaveform, color: "black" }]} sampleRate={this.state.audioBuffer?.sampleRate} />
-                : null
-            }
             <button onClick={this.handlePlayModified}>
                 {this.state.transformedSound?.isPlaying() 
                     ? "Pause transformed"
@@ -217,16 +204,18 @@ export default class App extends React.Component<IAppProps, IAppState>
                         : "Play transformed"
                 }
             </button>
-            <p>Modified (load: {this.state.transformedRenderTimeMs}ms):</p>
-            {(transformedData)
-                ? <Waveform width={WAVEFORM_WIDTH} waveforms={[{ numbers: transformedData, color: "black" }]} sampleRate={this.state.audioBuffer?.sampleRate} />
+
+            <p>Combined Waveforms</p>
+            {
+                waveformsToShow.length > 0
+                ? <Waveform width={WAVEFORM_WIDTH} waveforms={waveformsToShow} sampleRate={this.state.audioBuffer?.sampleRate} />
                 : null
             }
 
             <fieldset>
                 <legend>Controls</legend>
 
-                <p>threshold</p>
+                <p>threshold (dB)</p>
                 <label>
                     threshold
                     <input type="number"
@@ -280,6 +269,19 @@ export default class App extends React.Component<IAppProps, IAppState>
 
             {/* Debug compressor visualize */}
             {compressorGraphs}
+
+            <p>Original (length {this.state.audioBuffer?.length}; load: {this.state.audioLoadTimeMs}ms)</p>
+            {
+                pureWaveform
+                ? <Waveform width={WAVEFORM_WIDTH} waveforms={[{ numbers: pureWaveform, color: "black" }]} sampleRate={this.state.audioBuffer?.sampleRate} />
+                : null
+            }
+            <p>Modified (load: {this.state.transformedRenderTimeMs}ms):</p>
+            {(transformedData)
+                ? <Waveform width={WAVEFORM_WIDTH} waveforms={[{ numbers: transformedData, color: "black" }]} sampleRate={this.state.audioBuffer?.sampleRate} />
+                : null
+            }
+
         </>;
     }
 
