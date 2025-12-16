@@ -10,13 +10,21 @@ export interface ICompressorSettings {
 
 export default class Compressor {
     public static compressDb(db: number, compressor: ICompressorSettings): number {
-        return Compressor.compressLinear(Db.dbToLinear(db), compressor);
+        return Db.linearToDb(Compressor.compressLinear(Db.dbToLinear(db), compressor));
     }
 
+    // Calculates the dB value that marks the end of the knee region
+    public static calculateKneeEndDb(compressor: ICompressorSettings): number {
+        return compressor.threshold + compressor.knee;
+    }
+
+    // Applies compression to a linear value (e.g. the raw number between -1 and
+    // 1 you get from an AudioBuffer channel)
+    //
     // https://www.w3.org/TR/webaudio/#compression-curve
     public static compressLinear(linearValue: number, compressor: ICompressorSettings): number {
         const linearThreshold = Db.dbToLinear(compressor.threshold);
-        const linearKneeEnd = Db.dbToLinear(compressor.threshold + compressor.knee);
+        const linearKneeEnd = Db.dbToLinear(Compressor.calculateKneeEndDb(compressor));
         // console.log(`threshold: ${linearThreshold}; knee end: ${linearKneeEnd}`);
         if (linearValue < linearThreshold) {
             return linearValue;
@@ -35,9 +43,11 @@ export default class Compressor {
             // so follow the Chromium model and apply the ration "after" the
             // threshold limit.
             //
-            // TODO: should this knee be done on the linear value or the the dB
-            // value?
-            return linearKneeEnd + ((1 / compressor.ratio) * (linearValue - linearKneeEnd));
+            // The ratio should be applied to the *decibel* value, not the
+            // linear value, so we convert back and forth here.
+            const inputDb = Db.linearToDb(linearValue);
+            const outputDb = Db.linearToDb(linearKneeEnd) + ((1 / compressor.ratio) * (inputDb - Db.linearToDb(linearKneeEnd)));
+            return Db.dbToLinear(outputDb);
         }
     }
 }

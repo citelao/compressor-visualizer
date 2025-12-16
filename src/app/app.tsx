@@ -111,7 +111,7 @@ export default class App extends React.Component<IAppProps, IAppState>
                 // TODO: is this makeup gain correct?
                 const gain = ctx.createGain();
                 // console.log(compressionCurve(0.0), compressionCurve(0.03), compressionCurve(0.3), compressionCurve(0.3))
-                const fullMakeupGain = 1 / Compressor.compressDb(1.0, this.state.compressor);
+                const fullMakeupGain = 1 / Compressor.compressLinear(1.0, this.state.compressor);
                 const makeupGain = Math.pow(fullMakeupGain, 0.6);
                 const invertMakeupGain = 1 / makeupGain;
                 gain.gain.value = invertMakeupGain;
