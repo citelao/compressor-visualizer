@@ -194,6 +194,10 @@ export default class App extends React.Component<IAppProps, IAppState>
         return <>
             <h1>Compressor Visualizer</h1>
 
+            <p>
+                Click and drag to move the waveform. Shift+scroll to zoom in/out.
+            </p>
+
             <ul>
                 <li>Analysis time: {calculationTime}ms</li>
             </ul>
@@ -213,10 +217,10 @@ export default class App extends React.Component<IAppProps, IAppState>
                 }
             </button>
             <p>Original (length {this.state.audioBuffer?.length}; load: {this.state.audioLoadTimeMs}ms)</p>
-            {(maxWaveform && meanWaveform && rmsWaveform)
+            {/* {(maxWaveform && meanWaveform && rmsWaveform)
                 ? <Waveform width={WAVEFORM_WIDTH} numbers={[maxWaveform, meanWaveform, rmsWaveform]} />
                 : null
-            }
+            } */}
             {
                 pureWaveform
                 ? <Waveform2 width={WAVEFORM_WIDTH} numbers={[pureWaveform/* , meanWaveform, rmsWaveform */]} />

@@ -16,6 +16,7 @@ interface IWaveformState {
 
 interface IWaveform2State {
     transform: d3.ZoomTransform;
+    hoverX: number | undefined;
 }
 
 const HEIGHT = 300;
@@ -24,11 +25,14 @@ export class Waveform2 extends React.Component<IWaveformProps, IWaveform2State> 
     private svgRef = React.createRef<SVGSVGElement>();
     private zoomBehavior: d3.ZoomBehavior<SVGSVGElement, unknown>;
 
+    private isHandlingMouseMove = false;
+
     public constructor(props: IWaveformProps) {
         super(props);
 
         this.state = {
-            transform: d3.zoomIdentity
+            transform: d3.zoomIdentity,
+            hoverX: undefined
         }
 
         this.zoomBehavior = d3.zoom<SVGSVGElement, unknown>()
@@ -59,20 +63,44 @@ export class Waveform2 extends React.Component<IWaveformProps, IWaveform2State> 
             .x((d, i) => x(i))
             .y((d) => y(d));
 
-        const xTicks = x.ticks(10);
         const yTicks = y.ticks(5);
+
+        const hoveredPosition = this.state.hoverX !== undefined
+            ? Math.floor(x.invert(this.state.hoverX))
+            : undefined;
+
+        const isValidHover = hoveredPosition !== undefined
+            && hoveredPosition >= 0
+            && hoveredPosition < data.length;
+
+        const hoveredGroup = isValidHover
+            ? <g>
+                <text x={this.state.hoverX! + 10} y={10} dominantBaseline="middle" textAnchor="start">
+                    Sample {hoveredPosition} : {data[hoveredPosition!].toFixed(4)}
+                </text>
+                <line x1={x(hoveredPosition)} x2={x(hoveredPosition)}
+                    y1={margin.top} y2={height - margin.bottom}
+                    stroke="black" strokeOpacity={0.5} />
+             </g>
+            : null;
+
 
         return <svg
             ref={this.svgRef}
             width={this.props.width}
             height={height}
-            style={{ cursor: 'grab' }}>
+            style={{ cursor: 'grab' }}
+            onMouseMove={this.handleMouseMove}
+            onMouseEnter={this.handleMouseEnter}
+            onMouseLeave={this.handleMouseLeave}>
 
             {/* a nice background for the data, using the margin */}
             {/* <rect x={margin.left} y={margin.top}
                 width={this.props.width - margin.left - margin.right}
                 height={height - margin.top - margin.bottom}
                 fill="lightgray" /> */}
+
+            {hoveredGroup}
 
             <g>
                 <text x={10} y={10} dominantBaseline="middle">
@@ -121,18 +149,18 @@ export class Waveform2 extends React.Component<IWaveformProps, IWaveform2State> 
             const dataLength = this.props.numbers[0].length;
             const margin = { top: 20, right: 20, bottom: 20, left: 20 };
             const plotWidth = this.props.width - margin.left - margin.right;
-            
+
             // Minimum zoom: show entire waveform (with some padding)
             const minZoom = 0.1;
-            
+
             // Maximum zoom: allow at least 2 pixels per sample for clear individual sample visibility
             // This means each sample will be at least 2 pixels wide when fully zoomed in
             const pixelsPerSample = 2;
             const maxZoom = (dataLength * pixelsPerSample) / plotWidth;
-            
+
             // Ensure maxZoom is at least 1 and reasonable upper bound
             const clampedMaxZoom = Math.max(1, Math.min(maxZoom, 1000));
-            
+
             this.zoomBehavior.scaleExtent([minZoom, clampedMaxZoom]);
         }
     }
@@ -140,6 +168,34 @@ export class Waveform2 extends React.Component<IWaveformProps, IWaveform2State> 
     private handleZoom = (event: d3.D3ZoomEvent<SVGSVGElement, unknown>) => {
         this.setState({
             transform: event.transform
+        });
+    }
+
+    private handleMouseMove = (e: React.MouseEvent<SVGSVGElement, MouseEvent>) => {
+        if (!this.isHandlingMouseMove) {
+            const target = e.currentTarget;
+            requestAnimationFrame(() => {
+                const svg = target as SVGSVGElement;
+                this.setState({
+                    hoverX: e.clientX - svg.getBoundingClientRect().left
+                })
+                this.isHandlingMouseMove = false;
+            });
+            this.isHandlingMouseMove = true;
+        }
+    }
+
+    private handleMouseEnter = (e: React.MouseEvent<SVGSVGElement, MouseEvent>) => {
+        // this.setState({
+        //     hoverX:
+        // });
+    }
+
+    private handleMouseLeave = (e: React.MouseEvent<SVGSVGElement, MouseEvent>) => {
+        requestAnimationFrame(() => {
+            this.setState({
+                hoverX: undefined
+            });
         });
     }
 }
