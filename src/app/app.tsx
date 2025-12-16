@@ -108,15 +108,20 @@ export default class App extends React.Component<IAppProps, IAppState>
                 compressor.attack.value = this.state.compressor.attack;
                 compressor.release.value = this.state.compressor.release;
 
-                // TODO: is this makeup gain correct?
+                // Invert the default makeup gain applied by the compressor.
                 const gain = ctx.createGain();
-                // console.log(compressionCurve(0.0), compressionCurve(0.03), compressionCurve(0.3), compressionCurve(0.3))
-                const fullMakeupGain = 1 / Compressor.compressLinear(1.0, this.state.compressor);
-                const makeupGain = Math.pow(fullMakeupGain, 0.6);
-                const invertMakeupGain = 1 / makeupGain;
+                const makeupGainLinear = Compressor.makeupGainLinear(this.state.compressor);
+                const invertMakeupGain = 1 / makeupGainLinear;
                 gain.gain.value = invertMakeupGain;
 
-                console.log(`Makeup gain: ${makeupGain} (full: ${fullMakeupGain}), Applied: ${invertMakeupGain}`);
+                const fullRangeGainDb = Compressor.fullRangeGainDb(this.state.compressor);
+                const fullRangeGainLinear = Compressor.fullRangeGainLinear(this.state.compressor);
+                const makeupGainDb = Compressor.makeupGainDb(this.state.compressor);
+                const invertedDb = Db.linearToDb(invertMakeupGain);
+                let logString = `Default makeup gain: ${makeupGainDb.toFixed(2)}dB (${makeupGainLinear.toFixed(2)} linear)\n`;
+                logString += `\tFull range gain: ${fullRangeGainDb.toFixed(2)}dB (${fullRangeGainLinear.toFixed(2)} linear)\n`;
+                logString += `=> Applied inverted makeup gain: ${invertedDb.toFixed(2)}dB (${invertMakeupGain.toFixed(2)} linear)`;
+                console.log(logString);
 
                 return buf.connect(compressor).connect(gain);
             });
@@ -173,10 +178,10 @@ export default class App extends React.Component<IAppProps, IAppState>
 
         const waveformsToShow = [];
         if (pureWaveform) {
-            waveformsToShow.push({ numbers: pureWaveform, color: "blue" });
+            waveformsToShow.push({ numbers: pureWaveform, color: "red" });
         }
         if (transformedData) {
-            waveformsToShow.push({ numbers: transformedData, color: "red" });
+            waveformsToShow.push({ numbers: transformedData, color: "blue" });
         }
 
         return <>
