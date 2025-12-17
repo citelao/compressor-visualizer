@@ -1,5 +1,6 @@
 import React from "react";
 import * as d3 from "d3";
+import { absMaxSample, minMaxSample, type MinMaxSampleResult } from "./Sampler";
 
 interface IIndependentWaveform {
     numbers: Float32Array;
@@ -16,9 +17,12 @@ interface IWaveformProps {
 interface IWaveformState {
     transform: d3.ZoomTransform;
     hoverX: number | undefined;
+
+    sampledWaveform?: MinMaxSampleResult;
 }
 
 const HEIGHT = 300;
+const TOOMANY = 1000;
 
 export default class Waveform extends React.Component<IWaveformProps, IWaveformState> {
     private svgRef = React.createRef<SVGSVGElement>();
@@ -31,7 +35,8 @@ export default class Waveform extends React.Component<IWaveformProps, IWaveformS
 
         this.state = {
             transform: d3.zoomIdentity,
-            hoverX: undefined
+            hoverX: undefined,
+            sampledWaveform: undefined,
         }
 
         this.zoomBehavior = d3.zoom<SVGSVGElement, unknown>()
@@ -58,10 +63,12 @@ export default class Waveform extends React.Component<IWaveformProps, IWaveformS
         if (this.props.waveforms.some(w => w.numbers.length !== this.props.waveforms[0].numbers.length)) {
             throw new Error("All waveforms must have the same length");
         }
+
+        const sampledXLength = Math.min(xLength, TOOMANY);
         
         // Apply d3 transform to scales
         const x = this.state.transform.rescaleX(
-            d3.scaleLinear([0, xLength], [margin.left, this.props.width - margin.right])
+            d3.scaleLinear([0, sampledXLength], [margin.left, this.props.width - margin.right])
         );
 
         const yTicks = y.ticks(5);
@@ -77,7 +84,7 @@ export default class Waveform extends React.Component<IWaveformProps, IWaveformS
 
         const isValidHover = hoveredPosition !== undefined
             && hoveredPosition >= 0
-            && hoveredPosition < xLength;
+            && hoveredPosition < sampledXLength;
 
         const hoveredPositions = this.props.waveforms.map(w => isValidHover ? w.numbers[hoveredPosition!] : undefined);
 
@@ -93,11 +100,16 @@ export default class Waveform extends React.Component<IWaveformProps, IWaveformS
             : null;
 
         const lines = this.props.waveforms.map((waveform, index) => {
+            // Trim the line if it's too long
+            const numbersToUse = (waveform.numbers.length > TOOMANY)
+                ? this.state.sampledWaveform?.max ?? new Float32Array(TOOMANY)
+                : waveform.numbers;
+
             const lineGenerator = d3.line<number>()
                 .x((d, i) => x(i))
                 .y((d) => y(d));
             return <g key={index}>
-                <path d={lineGenerator(waveform.numbers)!}
+                <path d={lineGenerator(numbersToUse)!}
                     fill="none" stroke={waveform.color} opacity={0.5} strokeWidth={1} />
             </g>;
         });
@@ -145,12 +157,24 @@ export default class Waveform extends React.Component<IWaveformProps, IWaveformS
         if (this.svgRef.current) {
             d3.select(this.svgRef.current).call(this.zoomBehavior);
         }
+
+        const sampledWaveform = minMaxSample(this.props.waveforms[0].numbers, 1000);
+        this.setState({
+            sampledWaveform
+        });
     }
 
     public componentDidUpdate(prevProps: IWaveformProps) {
         // Update zoom extents if data length changed
         if (prevProps.waveforms[0]?.numbers.length !== this.props.waveforms[0]?.numbers.length) {
             this.updateZoomExtents();
+        }
+
+        if (prevProps.waveforms[0]?.numbers !== this.props.waveforms[0]?.numbers) {
+            const sampledWaveform = minMaxSample(this.props.waveforms[0].numbers, 1000);
+            this.setState({
+                sampledWaveform
+            });
         }
     }
 
@@ -172,7 +196,8 @@ export default class Waveform extends React.Component<IWaveformProps, IWaveformS
             // Maximum zoom: allow at least 2 pixels per sample for clear individual sample visibility
             // This means each sample will be at least 2 pixels wide when fully zoomed in
             const pixelsPerSample = 2;
-            const maxZoom = (dataLength * pixelsPerSample) / plotWidth;
+            // const maxZoom = (dataLength * pixelsPerSample) / plotWidth;
+            const maxZoom = TOOMANY;
 
             // Ensure maxZoom is at least 1 and reasonable upper bound
             const clampedMaxZoom = Math.max(1, Math.min(maxZoom, 1000));
