@@ -11,15 +11,15 @@ export interface ICompressorSettings {
 export default class Compressor {
 
     // Apply compression to a dB value (result in dB).
-    public static compressDb(db: number, compressor: ICompressorSettings): number {
-        return Db.linearToDb(Compressor.compressLinear(Db.dbToLinear(db), compressor));
+    public static compressCurveDb(db: number, compressor: ICompressorSettings): number {
+        return Db.linearToDb(Compressor.compressCurveLinear(Db.dbToLinear(db), compressor));
     }
 
     // Applies compression to a linear value (e.g. the raw number between -1 and
     // 1 you get from an AudioBuffer channel)
     //
     // https://www.w3.org/TR/webaudio/#compression-curve
-    public static compressLinear(linearValue: number, compressor: ICompressorSettings): number {
+    public static compressCurveLinear(linearValue: number, compressor: ICompressorSettings): number {
         const linearThreshold = Db.dbToLinear(compressor.threshold);
         const linearKneeEnd = Db.dbToLinear(Compressor.calculateKneeEndDb(compressor));
         // console.log(`threshold: ${linearThreshold}; knee end: ${linearKneeEnd}`);
@@ -58,12 +58,12 @@ export default class Compressor {
     //
     // https://webaudio.github.io/web-audio-api/#computing-the-makeup-gain
     public static fullRangeGainLinear(compressor: ICompressorSettings): number {
-        return Compressor.compressLinear(1.0, compressor);
+        return Compressor.compressCurveLinear(1.0, compressor);
     }
 
     // See `fullRangeGainLinear`. This returns the value in dB.
     public static fullRangeGainDb(compressor: ICompressorSettings): number {
-        const linearResult = Compressor.compressLinear(1.0, compressor);
+        const linearResult = Compressor.compressCurveLinear(1.0, compressor);
         return Db.linearToDb(linearResult);
     }
 

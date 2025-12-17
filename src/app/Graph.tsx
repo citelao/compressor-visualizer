@@ -142,7 +142,7 @@ export class CompressorGraph extends React.Component<ICompressorGraphProps> {
         const dataToX = d3.scaleLinear([0, sampleCount], [-100, 0]);
         for (let i = 0; i < sampleCount; i++) {
             const inputDb = dataToX(i);
-            const outputDb = Compressor.compressDb(inputDb, this.props.compressorSettings);
+            const outputDb = Compressor.compressCurveDb(inputDb, this.props.compressorSettings);
             data.push(outputDb);
         }
 

@@ -160,7 +160,7 @@ export default class App extends React.Component<IAppProps, IAppState>
             if (Math.abs(linearValue) < 0.0001) {
                 return 1.0;
             } else {
-                const shapedInput = Compressor.compressLinear(Math.abs(linearValue), this.state.compressor);
+                const shapedInput = Compressor.compressCurveLinear(Math.abs(linearValue), this.state.compressor);
                 return shapedInput / Math.abs(linearValue);
             }
         };
@@ -170,7 +170,7 @@ export default class App extends React.Component<IAppProps, IAppState>
                 xRange={[0, 1]}
                 yRange={[0, 1]}
                 title="Compressor Curve (linear)"
-                fn={(x) => Compressor.compressLinear(Math.abs(x), this.state.compressor)} />
+                fn={(x) => Compressor.compressCurveLinear(Math.abs(x), this.state.compressor)} />
             <Graph2 height={300} width={300}
                 xRange={[0, 1]}
                 yRange={[0, 1]}
