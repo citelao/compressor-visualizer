@@ -5,7 +5,7 @@ import Db from "./Db";
 import { CompressorGraph, Graph2 } from "./Graph";
 import Sound from "./Sound";
 import Timer from "./Timer";
-import Waveform from "./Waveform";
+import Waveform, { Waveform2 } from "./Waveform";
 import { absMeanSample, rmsSample } from "./Sampler";
 
 interface IAppProps {}
@@ -69,14 +69,14 @@ export default class App extends React.Component<IAppProps, IAppState>
         // const buffer = await fetchAudioBuffer("notrack/MS0908_Drums1NoComp_MR1001.wav"); // You can hear a diff!
         // const buffer = await fetchAudioBuffer("notrack/MS0912_GtrNoComp_MR0702.wav");
         console.log(buffer, absMeanSample(buffer.getChannelData(0), 1), rmsSample(buffer.getChannelData(0), 1));
-        
+
         const audioContext = new AudioContext();
 
         const audioSound = new Sound(audioContext, buffer);
 
         // const bufferSource = audioContext.createBufferSource();
         // bufferSource.buffer = buffer;
-    
+
         // const compressor = audioContext.createDynamicsCompressor();
         // compressor.threshold.value = this.state.compressor.threshold;
         // compressor.knee.value = this.state.compressor.knee;
@@ -96,7 +96,8 @@ export default class App extends React.Component<IAppProps, IAppState>
     }
 
     public async componentDidUpdate(prevProps: IAppProps, prevState: IAppState) {
-        const hasRenderedTransform = !!this.state.transformedBuffer;
+        // const hasRenderedTransform = !!this.state.transformedBuffer;
+        const hasRenderedTransform = true;
         const thresholdChanged = this.state.compressor.threshold != prevState.compressor.threshold;
         const ratioChanged = this.state.compressor.ratio != prevState.compressor.ratio;
         const attackChanged = this.state.compressor.attack != prevState.compressor.attack;
@@ -135,14 +136,20 @@ export default class App extends React.Component<IAppProps, IAppState>
                 return buf.connect(compressor).connect(gain);
             });
 
+            console.log("Setting state...");
+
             this.setState({
                 transformedBuffer: effectsBuffer,
                 transformedRenderTimeMs: timer.stop()
             });
+
+            console.log("State set.");
         }
     }
 
     public render() {
+        console.log("Rendering app...");
+
         const channelData = this.state.audioBuffer?.getChannelData(0);
         const WAVEFORM_WIDTH = 1000;
 
@@ -201,6 +208,7 @@ export default class App extends React.Component<IAppProps, IAppState>
             </p>
 
             <ul>
+                <li>Audio load time: {this.state.audioLoadTimeMs}ms</li>
                 <li>Analysis time: {calculationTime}ms</li>
                 <li>Compression time: {this.state.transformedRenderTimeMs}ms</li>
             </ul>
@@ -212,7 +220,7 @@ export default class App extends React.Component<IAppProps, IAppState>
                 Your browser does not support the audio element :(.
             </audio> */}
             <button onClick={this.handlePlayOriginal}>
-                {this.state.audioSound?.isPlaying() 
+                {this.state.audioSound?.isPlaying()
                     ? "Pause original"
                     : (this.state.transformedSound?.isPlaying())
                         ? "Switch to original"
@@ -221,7 +229,7 @@ export default class App extends React.Component<IAppProps, IAppState>
             </button>
 
             <button onClick={this.handlePlayModified}>
-                {this.state.transformedSound?.isPlaying() 
+                {this.state.transformedSound?.isPlaying()
                     ? "Pause transformed"
                     : (this.state.audioSound?.isPlaying())
                         ? "Switch to transformed"
@@ -232,7 +240,7 @@ export default class App extends React.Component<IAppProps, IAppState>
             <p>Combined Waveforms</p>
             {
                 waveformsToShow.length > 0
-                ? <Waveform width={WAVEFORM_WIDTH} waveforms={waveformsToShow} sampleRate={this.state.audioBuffer?.sampleRate} />
+                ? <Waveform2 width={WAVEFORM_WIDTH} waveforms={waveformsToShow} sampleRate={this.state.audioBuffer?.sampleRate} />
                 : null
             }
 
@@ -372,7 +380,7 @@ async function fetchAudioBuffer(uri: string): Promise<AudioBuffer> {
                     console.log(`Audio data: ${decodedData.numberOfChannels} channels; ${decodedData.length} @ ${decodedData.sampleRate}Hz`);
                     const offlineContext = new OfflineAudioContext(decodedData.numberOfChannels, decodedData.length, decodedData.sampleRate);
                     const bufferSource = offlineContext.createBufferSource();
-                    
+
                     bufferSource.buffer = decodedData;
                     bufferSource.connect(offlineContext.destination);
                     bufferSource.start();
@@ -403,6 +411,10 @@ async function renderEffectsChain(inputBuffer: AudioBuffer, chainFn: (context: O
     bufferSource.connect(audioContext.destination);
     // bufferSource.connect(compressor).connect(audioContext.destination);
 
+    console.log("Starting buffer source...");
     bufferSource.start();
-    return await audioContext.startRendering();
+    console.log("Rendering...");
+    const renderPromise = await audioContext.startRendering();
+    console.log("Rendered!");
+    return renderPromise;
 }
