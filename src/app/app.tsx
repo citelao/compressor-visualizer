@@ -45,7 +45,7 @@ export default class App extends React.Component<IAppProps, IAppState>
             transformedSound: null,
 
             compressor: {
-                threshold: -50,
+                threshold: -20,
                 ratio: 4,
                 knee: 0,
                 attack: .03,
