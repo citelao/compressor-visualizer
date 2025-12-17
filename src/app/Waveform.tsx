@@ -1,5 +1,6 @@
 import React from "react";
 import * as d3 from "d3";
+import type { JSX } from "astro/jsx-runtime";
 
 interface IIndependentWaveform {
     numbers: Float32Array;
@@ -19,6 +20,160 @@ interface IWaveformState {
 }
 
 const HEIGHT = 300;
+
+// Reimplement as function component to test performance difference
+export function Waveform2(props: IWaveformProps): JSX.Element {
+    const [transform, setTransform] = React.useState<d3.ZoomTransform>(d3.zoomIdentity);
+    const [hoverX, setHoverX] = React.useState<number | undefined>(undefined);
+    const [isHandlingMouseMove, setIsHandlingMouseMove] = React.useState(false);
+    const svgRef = React.useRef<SVGSVGElement>(null);
+
+    const zoomBehavior = React.useMemo(() => {
+        return d3.zoom<SVGSVGElement, unknown>()
+            .on('zoom', (event: d3.D3ZoomEvent<SVGSVGElement, unknown>) => {
+                setTransform(event.transform);
+            });
+    }, []);
+
+    React.useEffect(() => {
+        if (props.waveforms[0]) {
+            const dataLength = props.waveforms[0].numbers.length;
+            const margin = { top: 20, right: 20, bottom: 20, left: 20 };
+            const plotWidth = props.width - margin.left - margin.right;
+            const minZoom = 0.1;
+            const pixelsPerSample = 2;
+            const maxZoom = (dataLength * pixelsPerSample) / plotWidth;
+            const clampedMaxZoom = Math.max(1, Math.min(maxZoom, 1000));
+            zoomBehavior.scaleExtent([minZoom, clampedMaxZoom]);
+        }
+    }, [props.waveforms, props.width, zoomBehavior]);
+
+    React.useEffect(() => {
+        if (svgRef.current) {
+            d3.select(svgRef.current).call(zoomBehavior);
+        }
+        return () => {
+            if (svgRef.current) {
+                d3.select(svgRef.current).on('.zoom', null);
+            }
+        };
+    }, [zoomBehavior]);
+
+    const handleMouseMove = (e: React.MouseEvent<SVGSVGElement, MouseEvent>) => {
+        if (!isHandlingMouseMove) {
+            const target = e.currentTarget;
+            requestAnimationFrame(() => {
+                const rect = target.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                setHoverX(x);
+                setIsHandlingMouseMove(false);
+            });
+            setIsHandlingMouseMove(true);
+        }
+    };
+
+    const handleMouseEnter = () => {
+        setIsHandlingMouseMove(true);
+    };
+
+    const handleMouseLeave = () => {
+        setIsHandlingMouseMove(false);
+        setHoverX(undefined);
+    };
+
+    const height = props.height || HEIGHT;
+
+    const margin = { top: 20, right: 20, bottom: 20, left: 20 };
+
+    // Standardized across audio.
+    const y = d3.scaleLinear([-1, 1], [height - margin.bottom, margin.top]);
+
+    // If the data lengths differ, throw.
+    const xLength = props.waveforms[0].numbers.length;
+    if (props.waveforms.some(w => w.numbers.length !== props.waveforms[0].numbers.length)) {
+        throw new Error("All waveforms must have the same length");
+    }
+
+    // Apply d3 transform to scales
+    const x = transform.rescaleX(
+        d3.scaleLinear([0, xLength], [margin.left, props.width - margin.right])
+    );
+
+    const yTicks = y.ticks(5);
+
+    const viewWidthS = props.sampleRate ? xLength / props.sampleRate : undefined;
+
+    const hoveredPosition = hoverX !== undefined
+        ? Math.floor(x.invert(hoverX))
+        : undefined;
+    const hoveredS = props.sampleRate && hoveredPosition !== undefined
+        ? ` (${(hoveredPosition / props.sampleRate).toFixed(2)}s)`
+        : undefined;
+
+    const isValidHover = hoveredPosition !== undefined
+        && hoveredPosition >= 0
+        && hoveredPosition < xLength;
+
+    const hoveredPositions = props.waveforms.map(w => isValidHover ? w.numbers[hoveredPosition!] : undefined);
+
+    const hoveredGroup = isValidHover
+        ? <g>
+            <text x={hoverX! + 10} y={10} dominantBaseline="middle" textAnchor="start">
+                Sample {hoveredPosition}{hoveredS} : {hoveredPositions.map((val, index) => val?.toFixed(4) ?? "N/A").join(", ")}
+            </text>
+            <line x1={x(hoveredPosition)} x2={x(hoveredPosition)}
+                y1={margin.top} y2={height - margin.bottom}
+                stroke="black" strokeOpacity={0.5} />
+            </g>
+        : null;
+
+    const lines = props.waveforms.map((waveform, index) => {
+        const lineGenerator = d3.line<number>()
+            .x((d, i) => x(i))
+            .y((d) => y(d));
+        return <g key={index}>
+            <path d={lineGenerator(waveform.numbers)!}
+                fill="none" stroke={waveform.color} opacity={0.5} strokeWidth={1} />
+        </g>;
+    });
+
+    return <svg
+        ref={svgRef}
+        width={props.width}
+        height={height}
+        style={{ cursor: 'grab' }}
+        onMouseMove={handleMouseMove}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}>
+
+        {/* a nice background for the data, using the margin */}
+        {/* <rect x={margin.left} y={margin.top}
+            width={props.width - margin.left - margin.right}
+            height={height - margin.top - margin.bottom}
+            fill="lightgray" /> */}
+
+        {hoveredGroup}
+
+        <g>
+            <text x={10} y={10} dominantBaseline="middle">
+                Zoom: {transform.k.toFixed(2)}x | Pan: {transform.x.toFixed(0)} | Samples: {xLength.toLocaleString()} | Duration: {viewWidthS?.toFixed(2)}s
+            </text>
+        </g>
+        <g name="yTicks">
+            {yTicks.map((tick) => (
+                <g key={tick}>
+                    <line x1={margin.left} x2={props.width - margin.right}
+                        y1={y(tick)} y2={y(tick)}
+                        stroke="black" strokeOpacity={0.2} />
+                    <text stroke="black" x={40} y={y(tick)} dominantBaseline="middle" textAnchor="end">{tick.toFixed(1)}</text>
+                </g>
+            ))}
+        </g>
+        <g>
+            {lines}
+        </g>
+    </svg>;
+}
 
 export default class Waveform extends React.Component<IWaveformProps, IWaveformState> {
     private svgRef = React.createRef<SVGSVGElement>();
@@ -47,7 +202,7 @@ export default class Waveform extends React.Component<IWaveformProps, IWaveformS
 
     public render() {
         const height = this.props.height || HEIGHT;
-        
+
         const margin = { top: 20, right: 20, bottom: 20, left: 20 };
 
         // Standardized across audio.
@@ -58,7 +213,7 @@ export default class Waveform extends React.Component<IWaveformProps, IWaveformS
         if (this.props.waveforms.some(w => w.numbers.length !== this.props.waveforms[0].numbers.length)) {
             throw new Error("All waveforms must have the same length");
         }
-        
+
         // Apply d3 transform to scales
         const x = this.state.transform.rescaleX(
             d3.scaleLinear([0, xLength], [margin.left, this.props.width - margin.right])
