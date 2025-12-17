@@ -5,7 +5,7 @@ import Db from "./Db";
 import { CompressorGraph, Graph2 } from "./Graph";
 import Sound from "./Sound";
 import Timer from "./Timer";
-import Waveform, { Waveform2 } from "./Waveform";
+import /* Waveform, */ { Waveform2 } from "./Waveform";
 
 interface IAppProps {}
 
