@@ -231,7 +231,11 @@ export default class App extends React.Component<IAppProps, IAppState>
             <p>Combined Waveforms</p>
             {
                 waveformsToShow.length > 0
-                ? <Waveform2 width={WAVEFORM_WIDTH} waveforms={waveformsToShow} sampleRate={this.state.audioBuffer?.sampleRate} />
+                ? <Waveform2 
+                    width={WAVEFORM_WIDTH}
+                    waveforms={waveformsToShow}
+                    sampleRate={this.state.audioBuffer?.sampleRate}
+                    compressorSettings={this.state.compressor} />
                 : null
             }
 

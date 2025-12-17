@@ -1,6 +1,8 @@
 import React from "react";
 import * as d3 from "d3";
 import type { JSX } from "astro/jsx-runtime";
+import type { ICompressorSettings } from "./Compressor";
+import Db from "./Db";
 
 interface IIndependentWaveform {
     numbers: Float32Array;
@@ -9,6 +11,7 @@ interface IIndependentWaveform {
 
 interface IWaveformProps {
     waveforms: IIndependentWaveform[];
+    compressorSettings?: ICompressorSettings;
     sampleRate?: number;
     width: number;
     height?: number;
@@ -101,7 +104,7 @@ export function Waveform2(props: IWaveformProps): JSX.Element {
 
     const xStart = Math.max(0, x.invert(margin.left));
     const xEnd = Math.min(xLength, x.invert(props.width - margin.right));
-    console.log(`xStart: ${xStart}; xEnd: ${xEnd}`, x.domain(), x.range(), x(0), x(xStart), x(xEnd), xLength);
+    // console.log(`xStart: ${xStart}; xEnd: ${xEnd}`, x.domain(), x.range(), x(0), x(xStart), x(xEnd), xLength);
 
     const yTicks = y.ticks(5);
 
@@ -141,6 +144,18 @@ export function Waveform2(props: IWaveformProps): JSX.Element {
         </g>;
     });
 
+    let compressorSettings: JSX.Element | null = null;
+    if (props.compressorSettings) {
+        const linearThreshold = Db.dbToLinear(props.compressorSettings.threshold);
+
+        compressorSettings = <g name="compressorSettings">
+            {/* Draw threshold line */}
+            <line x1={margin.left} x2={props.width - margin.right}
+                y1={y(linearThreshold)} y2={y(linearThreshold)}
+                stroke="red" strokeOpacity={0.5} />
+        </g>;
+    }
+
     return <svg
         ref={svgRef}
         width={props.width}
@@ -176,6 +191,8 @@ export function Waveform2(props: IWaveformProps): JSX.Element {
         <g name="graphs">
             {lines}
         </g>
+
+        {compressorSettings}
 
         {/* Debug: draw start & end lines */}
         <g name="startEndLines">
