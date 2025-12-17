@@ -202,6 +202,7 @@ export default class App extends React.Component<IAppProps, IAppState>
 
             <ul>
                 <li>Analysis time: {calculationTime}ms</li>
+                <li>Compression time: {this.state.transformedRenderTimeMs}ms</li>
             </ul>
 
             {/* TODO: allow uploading */}

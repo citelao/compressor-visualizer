@@ -18,11 +18,12 @@ interface IWaveformState {
     transform: d3.ZoomTransform;
     hoverX: number | undefined;
 
-    sampledWaveform?: MinMaxSampleResult;
+    sampledWaveform: MinMaxSampleResult[];
+    lastUpdateDurationMs?: number;
 }
 
 const HEIGHT = 300;
-const TOOMANY = 1000;
+const TOOMANY = 10000;
 
 export default class Waveform extends React.Component<IWaveformProps, IWaveformState> {
     private svgRef = React.createRef<SVGSVGElement>();
@@ -36,7 +37,7 @@ export default class Waveform extends React.Component<IWaveformProps, IWaveformS
         this.state = {
             transform: d3.zoomIdentity,
             hoverX: undefined,
-            sampledWaveform: undefined,
+            sampledWaveform: [],
         }
 
         this.zoomBehavior = d3.zoom<SVGSVGElement, unknown>()
@@ -51,6 +52,7 @@ export default class Waveform extends React.Component<IWaveformProps, IWaveformS
     }
 
     public render() {
+        const stopwatch = performance.now();
         const height = this.props.height || HEIGHT;
         
         const margin = { top: 20, right: 20, bottom: 20, left: 20 };
@@ -100,19 +102,32 @@ export default class Waveform extends React.Component<IWaveformProps, IWaveformS
             : null;
 
         const lines = this.props.waveforms.map((waveform, index) => {
-            // Trim the line if it's too long
-            const numbersToUse = (waveform.numbers.length > TOOMANY)
-                ? this.state.sampledWaveform?.max ?? new Float32Array(TOOMANY)
-                : waveform.numbers;
+            // // Trim the line if it's too long
+            // const numbersToUse = (waveform.numbers.length > TOOMANY)
+            //     ? this.state.sampledWaveform?.max ?? new Float32Array(TOOMANY)
+            //     : waveform.numbers;
 
-            const lineGenerator = d3.line<number>()
-                .x((d, i) => x(i))
-                .y((d) => y(d));
+            // const lineGenerator = d3.line<number>()
+            //     .x((d, i) => x(i))
+            //     .y((d) => y(d));
+            // return <g key={index}>
+            //     <path d={lineGenerator(numbersToUse)!}
+            //         fill="none" stroke={waveform.color} opacity={0.5} strokeWidth={1} />
+            // </g>;
+
+            const areaGenerator = d3.area<number>()
+                .x((i) => x(i))
+                .y0((i) => y(this.state.sampledWaveform[index].min[i]!))
+                .y1((i) => y(this.state.sampledWaveform[index].max[i]!));
+            const dataRange = d3.range(this.state.sampledWaveform[index]?.max.length || 0);
+
             return <g key={index}>
-                <path d={lineGenerator(numbersToUse)!}
-                    fill="none" stroke={waveform.color} opacity={0.5} strokeWidth={1} />
+                <path d={areaGenerator(dataRange)!}
+                    fill={waveform.color} opacity={0.3} stroke="none" />
             </g>;
         });
+
+        const elapsed = performance.now() - stopwatch;
 
         return <svg
             ref={this.svgRef}
@@ -133,7 +148,7 @@ export default class Waveform extends React.Component<IWaveformProps, IWaveformS
 
             <g>
                 <text x={10} y={10} dominantBaseline="middle">
-                    Zoom: {this.state.transform.k.toFixed(2)}x | Pan: {this.state.transform.x.toFixed(0)} | Samples: {xLength.toLocaleString()} | Duration: {viewWidthS?.toFixed(2)}s
+                    Zoom: {this.state.transform.k.toFixed(2)}x | Pan: {this.state.transform.x.toFixed(0)} | Samples: {xLength.toLocaleString()} (render time: {elapsed.toFixed(2)}ms; proc: {this.state.lastUpdateDurationMs?.toFixed(2)}ms) | Duration: {viewWidthS?.toFixed(2)}s
                 </text>
             </g>
             <g name="yTicks">
@@ -153,27 +168,35 @@ export default class Waveform extends React.Component<IWaveformProps, IWaveformS
     }
 
     public componentDidMount() {
+        const stopwatch = performance.now();
         this.updateZoomExtents();
         if (this.svgRef.current) {
             d3.select(this.svgRef.current).call(this.zoomBehavior);
         }
 
-        const sampledWaveform = minMaxSample(this.props.waveforms[0].numbers, 1000);
+        const sampledWaveform = this.props.waveforms.map(waveform => minMaxSample(waveform.numbers, TOOMANY));
         this.setState({
-            sampledWaveform
+            sampledWaveform,
+            lastUpdateDurationMs: performance.now() - stopwatch,
         });
     }
 
     public componentDidUpdate(prevProps: IWaveformProps) {
+        const stopwatch = performance.now();
+
         // Update zoom extents if data length changed
         if (prevProps.waveforms[0]?.numbers.length !== this.props.waveforms[0]?.numbers.length) {
             this.updateZoomExtents();
         }
 
-        if (prevProps.waveforms[0]?.numbers !== this.props.waveforms[0]?.numbers) {
-            const sampledWaveform = minMaxSample(this.props.waveforms[0].numbers, 1000);
+        const didAnyChange = this.props.waveforms.some((waveform, index) => {
+            return prevProps.waveforms[index]?.numbers !== waveform.numbers;
+        });
+        if (didAnyChange) {
+            const sampledWaveform = this.props.waveforms.map(waveform => minMaxSample(waveform.numbers, TOOMANY));
             this.setState({
-                sampledWaveform
+                sampledWaveform,
+                lastUpdateDurationMs: performance.now() - stopwatch,
             });
         }
     }
