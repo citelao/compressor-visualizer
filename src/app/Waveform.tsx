@@ -152,7 +152,10 @@ export function Waveform2(props: IWaveformProps): JSX.Element {
             {/* Draw threshold line */}
             <line x1={margin.left} x2={props.width - margin.right}
                 y1={y(linearThreshold)} y2={y(linearThreshold)}
-                stroke="red" strokeOpacity={0.5} />
+                stroke="rebeccapurple" strokeOpacity={0.8} />
+            <text x={props.width - margin.right - 10} y={y(linearThreshold)} dominantBaseline="middle" textAnchor="end" fill="rebeccapurple">
+                Thresh {props.compressorSettings.threshold} dB
+            </text>
         </g>;
     }
 
@@ -184,7 +187,11 @@ export function Waveform2(props: IWaveformProps): JSX.Element {
                     <line x1={margin.left} x2={props.width - margin.right}
                         y1={y(tick)} y2={y(tick)}
                         stroke="black" strokeOpacity={0.2} />
-                    <text stroke="black" x={40} y={y(tick)} dominantBaseline="middle" textAnchor="end">{tick.toFixed(1)}</text>
+
+                    {/* Draw tick text */}
+                    <text stroke="black" x={props.width - margin.right - 5} y={y(tick)} dominantBaseline="middle" textAnchor="end">
+                        <tspan opacity={0.7}>{tick.toFixed(1)}</tspan>
+                    </text>
                 </g>
             ))}
         </g>
