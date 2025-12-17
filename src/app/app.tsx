@@ -5,7 +5,7 @@ import Db from "./Db";
 import { CompressorGraph, Graph2 } from "./Graph";
 import Sound from "./Sound";
 import Timer from "./Timer";
-import Waveform from "./Waveform";
+import Waveform, { Waveform2 } from "./Waveform";
 
 interface IAppProps {}
 
@@ -231,7 +231,7 @@ export default class App extends React.Component<IAppProps, IAppState>
             <p>Combined Waveforms</p>
             {
                 waveformsToShow.length > 0
-                ? <Waveform width={WAVEFORM_WIDTH} waveforms={waveformsToShow} sampleRate={this.state.audioBuffer?.sampleRate} />
+                ? <Waveform2 width={WAVEFORM_WIDTH} waveforms={waveformsToShow} sampleRate={this.state.audioBuffer?.sampleRate} />
                 : null
             }
 
@@ -304,12 +304,12 @@ export default class App extends React.Component<IAppProps, IAppState>
             <p>Original (length {this.state.audioBuffer?.length}; load: {this.state.audioLoadTimeMs}ms)</p>
             {
                 pureWaveform
-                ? <Waveform width={WAVEFORM_WIDTH} waveforms={[{ numbers: pureWaveform, color: "black" }]} sampleRate={this.state.audioBuffer?.sampleRate} />
+                ? <Waveform2 width={WAVEFORM_WIDTH} waveforms={[{ numbers: pureWaveform, color: "black" }]} sampleRate={this.state.audioBuffer?.sampleRate} />
                 : null
             }
             <p>Modified (load: {this.state.transformedRenderTimeMs}ms):</p>
             {(transformedData)
-                ? <Waveform width={WAVEFORM_WIDTH} waveforms={[{ numbers: transformedData, color: "black" }]} sampleRate={this.state.audioBuffer?.sampleRate} />
+                ? <Waveform2 width={WAVEFORM_WIDTH} waveforms={[{ numbers: transformedData, color: "black" }]} sampleRate={this.state.audioBuffer?.sampleRate} />
                 : null
             }
 
