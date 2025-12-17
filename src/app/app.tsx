@@ -250,6 +250,8 @@ export default class App extends React.Component<IAppProps, IAppState>
                 </label>
                 <button onClick={() => this.setState({ compressor: getUpdatedCompressorSettings({ threshold: -90 }) })}>-90</button>
                 <button onClick={() => this.setState({ compressor: getUpdatedCompressorSettings({ threshold: -50 }) })}>-50</button>
+                <button onClick={() => this.setState({ compressor: getUpdatedCompressorSettings({ threshold: -30 }) })}>-30</button>
+                <button onClick={() => this.setState({ compressor: getUpdatedCompressorSettings({ threshold: -20 }) })}>-20</button>
                 <button onClick={() => this.setState({ compressor: getUpdatedCompressorSettings({ threshold: -10 }) })}>-10</button>
 
                 <p>ratio</p>
