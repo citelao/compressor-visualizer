@@ -98,7 +98,7 @@ export default class Waveform extends React.Component<IWaveformProps, IWaveformS
                 .y((d) => y(d));
             return <g key={index}>
                 <path d={lineGenerator(waveform.numbers)!}
-                    fill="none" stroke={waveform.color} strokeWidth={1} />
+                    fill="none" stroke={waveform.color} opacity={0.5} strokeWidth={1} />
             </g>;
         });
 
