@@ -36,7 +36,7 @@ export default class Compressor {
             // (https://www.w3.org/TR/webaudio/#compression-curve). The spec
             // simply specifies linearity, but does not specify continuity.
             // However, in practice, this function is continuous
-            // (https://source.chromium.org/chromium/chromium/src/+/master:third_party/blink/renderer/platform/audio/dynamics_compressor_kernel.cc;l=117;bpv=1;bpt=1),
+            // (https://source.chromium.org/chromium/chromium/src/+/main:third_party/blink/renderer/platform/audio/dynamics_compressor.cc;l=513;drc=7666bc1983c2a5b98e5dc6fa6c28f8f53c07d06f?q=dynamics&ss=chromium%2Fchromium%2Fsrc),
             // so follow the Chromium model and apply the ration "after" the
             // threshold limit.
             //
@@ -73,9 +73,11 @@ export default class Compressor {
     // https://webaudio.github.io/web-audio-api/#computing-the-makeup-gain
     public static makeupGainLinear(compressor: ICompressorSettings): number {
         const fullRangeGain = Compressor.fullRangeGainLinear(compressor);
-        
-        // TODO: The spec says "inverse of full range gain", but that's not
-        // clear. We assume reciprocal here.
+
+        // The spec says "inverse of full range gain", but that's not clear. We
+        // assume reciprocal here to match Chrome's impl:
+        //
+        // https://source.chromium.org/chromium/chromium/src/+/main:third_party/blink/renderer/platform/audio/dynamics_compressor.cc;l=168;drc=7666bc1983c2a5b98e5dc6fa6c28f8f53c07d06f?q=dynamics&ss=chromium%2Fchromium%2Fsrc
         const fullRangeMakeupGain = 1.0 / fullRangeGain;
 
         // "Return the result of taking the 0.6 power of full range makeup gain."
