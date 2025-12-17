@@ -33,7 +33,12 @@ interface IWaveformPathProps {
 function WaveformPath(props: IWaveformPathProps): JSX.Element {
     const sampledWaveform = React.useMemo(() => {
         console.log("Sampling waveform for WaveformPath...");
-        return minMaxSample(props.waveform.numbers, TOOMANY);
+        // return minMaxSample(props.waveform.numbers, TOOMANY);
+        const stupidArray = new Float32Array(TOOMANY);
+        return {
+            min: stupidArray,
+            max: stupidArray,
+        };
     }, [props.waveform.numbers]);
 
     console.log("Rendering WaveformPath...");
@@ -103,21 +108,21 @@ export function Waveform2(props: IWaveformProps) {
             </g>
         : null;
 
-    const lines = props.waveforms.map((waveform, index) => {
-        // Trim the line if it's too long
-        const numbersToUse = (waveform.numbers.length > TOOMANY)
-            ? waveform.numbers.subarray(0, TOOMANY)
-            : waveform.numbers;
+    // const lines = props.waveforms.map((waveform, index) => {
+    //     // // Trim the line if it's too long
+    //     // const numbersToUse = (waveform.numbers.length > TOOMANY)
+    //     //     ? waveform.numbers.subarray(0, TOOMANY)
+    //     //     : waveform.numbers;
 
-        const lineGenerator = d3.line<number>()
-            .x((d, i) => x(i))
-            .y((d) => y(d));
-        return <g key={index}>
-            <path d={lineGenerator(numbersToUse)!}
-                fill="none" stroke={waveform.color} opacity={0.5} strokeWidth={1} />
-        </g>;
-        // return <WaveformPath key={index} waveform={waveform} x={x} y={y} />;
-    });
+    //     // const lineGenerator = d3.line<number>()
+    //     //     .x((d, i) => x(i))
+    //     //     .y((d) => y(d));
+    //     // return <g key={index}>
+    //     //     <path d={lineGenerator(numbersToUse)!}
+    //     //         fill="none" stroke={waveform.color} opacity={0.5} strokeWidth={1} />
+    //     // </g>;
+    //     return <WaveformPath key={index} waveform={waveform} x={x} y={y} />;
+    // });
 
     const elapsed = performance.now() - stopwatch;
     console.log(`Waveform render time: ${elapsed.toFixed(2)}ms`);
@@ -157,7 +162,7 @@ export function Waveform2(props: IWaveformProps) {
             ))}
         </g>
         <g>
-            {lines}
+            {/* {lines} */}
         </g>
     </svg>;
 }
