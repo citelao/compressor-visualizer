@@ -9,6 +9,7 @@ import /* Waveform, */ { Waveform2 } from "./Waveform";
 
 // https://vite.dev/guide/assets#explicit-url-imports
 import CollectorAudioWorkletFile from "./CollectorAudioWorklet.js?url";
+import { absMeanSample, rmsSample } from "./samples";
 
 interface IAppProps {}
 
@@ -412,60 +413,6 @@ async function fetchAudioBuffer(uri: string): Promise<AudioBuffer> {
         } catch(e) {
             reject(e);
         }
-    });
-}
-
-function getGroupSize(length: number, samples: number): number {
-    const groupSize = Math.max(Math.floor(length / samples), 1);
-    return groupSize;
-}
-
-function groupSample(arr: Float32Array, samples: number, fn: (batch: Float32Array) => number): Float32Array {
-    const groupSize = getGroupSize(arr.length, samples);
-    const actualSamples = Math.floor(arr.length / groupSize);
-    const outputArray = new Float32Array(actualSamples);
-
-    for (let index = 0; index < actualSamples; index++) {
-        const beginIndex = groupSize * index;
-        const endIndex = groupSize * (index + 1);
-        const batch = arr.subarray(beginIndex, endIndex);
-        outputArray[index] = fn(batch);
-    }
-
-    return outputArray;
-}
-
-function randomSample(arr: Float32Array, samples: number): Float32Array {
-    return groupSample(arr, samples, (batch) => {
-        return batch[0];
-    });
-}
-
-function absMaxSample(arr: Float32Array, samples: number): Float32Array {
-    return groupSample(arr, samples, (batch) => {
-        const max = batch.reduce((max, v) => Math.max(max, Math.abs(v)), - Infinity);
-        return max;
-    });
-}
-
-function meanSample(arr: Float32Array, samples: number): Float32Array {
-    return groupSample(arr, samples, (batch) => {
-        const mean = (batch.reduce((acc, v) => acc + v, 0)) / batch.length;
-        return mean;
-    });
-}
-
-function absMeanSample(arr: Float32Array, samples: number): Float32Array {
-    return groupSample(arr, samples, (batch) => {
-        const mean = (batch.reduce((acc, v) => acc + Math.abs(v), 0)) / batch.length;
-        return mean;
-    });
-}
-
-function rmsSample(arr: Float32Array, samples: number): Float32Array {
-    return groupSample(arr, samples, (batch) => {
-        const sumOfSquares = (batch.reduce((acc, v) => acc + (v * v), 0));
-        return Math.sqrt(sumOfSquares / batch.length);
     });
 }
 

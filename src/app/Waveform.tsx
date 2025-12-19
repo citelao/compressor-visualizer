@@ -3,6 +3,7 @@ import * as d3 from "d3";
 import type { JSX } from "astro/jsx-runtime";
 import type { ICompressorSettings } from "./Compressor";
 import Db from "./Db";
+import { absMaxSample } from "./samples";
 
 interface IIndependentWaveform {
     numbers: Float32Array;
@@ -61,6 +62,24 @@ export function Waveform2(props: IWaveformProps): JSX.Element {
             }
         };
     }, [zoomBehavior]);
+
+    const [simplifiedArea, setSimplifiedArea] = React.useState<d3.Area<number> | undefined>(undefined);
+    React.useEffect(() => {
+        let ignoreThis = false;
+        const sampleFn = async () => {
+            console.time("Recalculating simplified area");
+            console.log("Recalculating simplified area");
+
+            // TODO: set state; heed `ignoreThis`
+            const sample = absMaxSample(props.waveforms[0].numbers, props.width);
+            console.timeEnd("Recalculating simplified area");
+        }
+        sampleFn();
+
+        return () => {
+            ignoreThis = true;
+        };
+    }, [props.waveforms]);
 
     const handleMouseMove = (e: React.MouseEvent<SVGSVGElement, MouseEvent>) => {
         if (!isHandlingMouseMove) {
