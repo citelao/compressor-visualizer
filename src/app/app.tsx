@@ -279,6 +279,7 @@ export default class App extends React.Component<IAppProps, IAppState>
                 </label>
                 <button onClick={() => this.setState({ compressor: getUpdatedCompressorSettings({ ratio: 20 }) })}>20</button>
                 <button onClick={() => this.setState({ compressor: getUpdatedCompressorSettings({ ratio: 12 }) })}>12</button>
+                <button onClick={() => this.setState({ compressor: getUpdatedCompressorSettings({ ratio: 6 }) })}>6</button>
                 <button onClick={() => this.setState({ compressor: getUpdatedCompressorSettings({ ratio: 2 }) })}>2</button>
                 <p>knee</p>
 
@@ -291,6 +292,10 @@ export default class App extends React.Component<IAppProps, IAppState>
                         step={0.1}
                         onChange={(e) => this.setState({ compressor: getUpdatedCompressorSettings({ attack: e.target.valueAsNumber }) })} />
                 </label>
+                <button onClick={() => this.setState({ compressor: getUpdatedCompressorSettings({ attack: 0.3 }) })}>300ms</button>
+                <button onClick={() => this.setState({ compressor: getUpdatedCompressorSettings({ attack: 0.03 }) })}>30ms</button>
+                <button onClick={() => this.setState({ compressor: getUpdatedCompressorSettings({ attack: 0.003 }) })}>3ms</button>
+                <br />
 
                 <label>
                     release (s)
@@ -301,6 +306,10 @@ export default class App extends React.Component<IAppProps, IAppState>
                         step={0.1}
                         onChange={(e) => this.setState({ compressor: getUpdatedCompressorSettings({ release: e.target.valueAsNumber }) })} />
                 </label>
+                <button onClick={() => this.setState({ compressor: getUpdatedCompressorSettings({ release: 0.5 }) })}>500ms</button>
+                <button onClick={() => this.setState({ compressor: getUpdatedCompressorSettings({ release: 0.25 }) })}>250ms</button>
+                <button onClick={() => this.setState({ compressor: getUpdatedCompressorSettings({ release: 0.05 }) })}>50ms</button>
+                <button onClick={() => this.setState({ compressor: getUpdatedCompressorSettings({ release: 0.005 }) })}>5ms</button>
 
                 <p>gain</p>
                 <label>
