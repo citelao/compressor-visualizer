@@ -7,6 +7,9 @@ import Sound from "./Sound";
 import Timer from "./Timer";
 import /* Waveform, */ { Waveform2 } from "./Waveform";
 
+// https://vite.dev/guide/assets#explicit-url-imports
+import CollectorAudioWorkletFile from "./CollectorAudioWorklet.js?url";
+
 interface IAppProps {}
 
 interface IAppState {
@@ -132,7 +135,12 @@ export default class App extends React.Component<IAppProps, IAppState>
                 logString += `=> ${appliedString} inverted makeup gain: ${invertedDb.toFixed(2)}dB (${invertMakeupGain.toFixed(2)} linear)`;
                 console.log(logString);
 
-                return buf.connect(compressor).connect(gain);
+                const collector = new AudioWorkletNode(ctx, "collector-audio-worklet");
+                collector.port.onmessage = (event) => {
+                    console.log("Collector received:", event.data);
+                };
+
+                return buf.connect(compressor).connect(gain)/* .connect(collector) */;
             });
 
             this.setState({
