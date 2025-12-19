@@ -3,7 +3,7 @@ import * as d3 from "d3";
 import type { JSX } from "astro/jsx-runtime";
 import type { ICompressorSettings } from "./Compressor";
 import Db from "./Db";
-import { absMaxSample } from "./samples";
+import { absMaxSample, minMaxSample, type MinMaxSample } from "./samples";
 
 interface IIndependentWaveform {
     numbers: Float32Array;
@@ -109,18 +109,16 @@ export function Waveform2(props: IWaveformProps): JSX.Element {
     // console.log(`xStart: ${xStart}; xEnd: ${xEnd}`, x.domain(), x.range(), x(0), x(xStart), x(xEnd), xLength);
 
     const simplifiedAreaCount = props.width;
-    const [simplifiedWaves, setSimplifiedWaves] = React.useState<Float32Array[] | null>(null);
+    const [simplifiedWaves, setSimplifiedWaves] = React.useState<MinMaxSample[] | null>(null);
     React.useEffect(() => {
         let ignoreThis = false;
         const sampleFn = async () => {
-            // TODO: all lines.
-            // TODO: bring up a level?
             // TODO: only recalculate individual waveforms.
-            // TODO: min and max.
             console.time("Recalculating simplified area");
             const simplifiedWaves = props.waveforms.map((waveform) => {
                 // Make an area based on simplified data
-                const sample = absMaxSample(waveform.numbers, simplifiedAreaCount);
+                const sample = minMaxSample(waveform.numbers, simplifiedAreaCount);
+                console.log("Simplified waveform:", sample);
                 return sample;
 
             });
@@ -137,12 +135,6 @@ export function Waveform2(props: IWaveformProps): JSX.Element {
             ignoreThis = true;
         };
     }, [props.waveforms]);
-
-    // This is an area designed to show a simplified waveform when zoomed out.
-    const simplifiedArea = d3.area<number>()
-        .x((d, i) => x(i * (xLength / simplifiedAreaCount)))
-        .y0(y(0))
-        .y1((d) => y(d));
 
     const yTicks = y.ticks(5);
 
@@ -189,7 +181,13 @@ export function Waveform2(props: IWaveformProps): JSX.Element {
     });
 
     const waves = simplifiedWaves !== null ? simplifiedWaves.map((wave, index) => {
-        return <path key={index} d={simplifiedArea(wave)!}
+        // This is an area designed to show a simplified waveform when zoomed out.
+        const simplifiedArea = d3.area<number>()
+            .x((d, i) => x(i * (xLength / simplifiedAreaCount)))
+            .y0((d, i) => y(wave.mins[i]))
+            .y1((d, i) => y(wave.maxs[i]));
+
+        return <path key={index} d={simplifiedArea(d3.range(wave.mins.length))!}
             fillOpacity={0.2} stroke={props.waveforms[index]?.color} fill={props.waveforms[index]?.color} strokeWidth={1} />;
     }) : null;
 
