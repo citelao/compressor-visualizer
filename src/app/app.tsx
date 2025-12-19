@@ -482,7 +482,7 @@ async function renderEffectsChain(inputBuffer: AudioBuffer, chainFn: (context: O
     const node = chainFn(audioContext, bufferSource);
 
     node.connect(audioContext.destination);
-    bufferSource.connect(audioContext.destination);
+    // bufferSource.connect(audioContext.destination);
     // bufferSource.connect(compressor).connect(audioContext.destination);
 
     bufferSource.start();
