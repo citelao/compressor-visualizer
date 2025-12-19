@@ -251,9 +251,9 @@ export default class App extends React.Component<IAppProps, IAppState>
             <fieldset>
                 <legend>Controls</legend>
 
-                <p>threshold (dB)</p>
+                <p>threshold</p>
                 <label>
-                    threshold
+                    threshold (dB)
                     <input type="number"
                         value={this.state.compressor.threshold}
                         min={-100}
@@ -283,7 +283,7 @@ export default class App extends React.Component<IAppProps, IAppState>
                 <p>knee</p>
 
                 <label>
-                    attack
+                    attack (s)
                     <input type="number"
                         value={this.state.compressor.attack}
                         min={0}
@@ -293,7 +293,7 @@ export default class App extends React.Component<IAppProps, IAppState>
                 </label>
 
                 <label>
-                    release
+                    release (s)
                     <input type="number"
                         value={this.state.compressor.release}
                         min={0}
