@@ -109,26 +109,25 @@ export function Waveform2(props: IWaveformProps): JSX.Element {
     // console.log(`xStart: ${xStart}; xEnd: ${xEnd}`, x.domain(), x.range(), x(0), x(xStart), x(xEnd), xLength);
 
     const simplifiedAreaCount = props.width;
-    const [simplifiedWave, setSimplifiedWave] = React.useState<Float32Array | null>(null);
+    const [simplifiedWaves, setSimplifiedWaves] = React.useState<Float32Array[] | null>(null);
     React.useEffect(() => {
         let ignoreThis = false;
         const sampleFn = async () => {
             // TODO: all lines.
             // TODO: bring up a level?
+            // TODO: only recalculate individual waveforms.
             // TODO: min and max.
             console.time("Recalculating simplified area");
-            // console.log("Recalculating simplified area");
+            const simplifiedWaves = props.waveforms.map((waveform) => {
+                // Make an area based on simplified data
+                const sample = absMaxSample(waveform.numbers, simplifiedAreaCount);
+                return sample;
 
-            // Make an area based on simplified data
-            const sample = absMaxSample(props.waveforms[0].numbers, simplifiedAreaCount);
-            
+            });
+
             if (!ignoreThis) {
-                setSimplifiedWave(sample);
+                setSimplifiedWaves(simplifiedWaves);
             }
-
-            // if (!ignoreThis) {
-            //     setSimplifiedWave(42);
-            // }
 
             console.timeEnd("Recalculating simplified area");
         }
@@ -189,6 +188,11 @@ export function Waveform2(props: IWaveformProps): JSX.Element {
         </g>;
     });
 
+    const waves = simplifiedWaves !== null ? simplifiedWaves.map((wave, index) => {
+        return <path key={index} d={simplifiedArea(wave)!}
+            fillOpacity={0.2} stroke={props.waveforms[index]?.color} fill={props.waveforms[index]?.color} strokeWidth={1} />;
+    }) : null;
+
     let compressorSettings: JSX.Element | null = null;
     if (props.compressorSettings) {
         const linearThreshold = Db.dbToLinear(props.compressorSettings.threshold);
@@ -244,17 +248,11 @@ export function Waveform2(props: IWaveformProps): JSX.Element {
             {/* TODO: only show when zoomed in */}
             {lines}
         </g>
+        <g name="simplifiedWaves">
+            {waves}
+        </g>
 
         {compressorSettings}
-
-        {/* Draw simplified area */}
-        {simplifiedWave !== null && (
-            <text x={40} y={40} fill="red">{simplifiedWave.length} points; {simplifiedWave[0]}</text>
-        )}
-        {simplifiedWave !== null && (
-            <path d={simplifiedArea(simplifiedWave)!}
-                fill="rgba(255,0,0,0.1)" stroke="red" strokeWidth={1} />
-        )}
 
         {/* Debug: draw start & end lines */}
         <g name="startEndLines">
