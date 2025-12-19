@@ -473,6 +473,9 @@ function rmsSample(arr: Float32Array, samples: number): Float32Array {
 // destination.
 async function renderEffectsChain(inputBuffer: AudioBuffer, chainFn: (context: OfflineAudioContext, bufferSource: AudioBufferSourceNode) => AudioNode): Promise<AudioBuffer> {
     const audioContext = new OfflineAudioContext(inputBuffer.numberOfChannels, inputBuffer.length, inputBuffer.sampleRate);
+    await audioContext.audioWorklet.addModule(CollectorAudioWorkletFile);
+    // console.log(`Loaded audio worklet from ${CollectorAudioWorkletFile}`);
+
     const bufferSource = audioContext.createBufferSource();
     bufferSource.buffer = inputBuffer;
 
