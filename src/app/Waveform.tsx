@@ -63,24 +63,6 @@ export function Waveform2(props: IWaveformProps): JSX.Element {
         };
     }, [zoomBehavior]);
 
-    const [simplifiedArea, setSimplifiedArea] = React.useState<d3.Area<number> | undefined>(undefined);
-    React.useEffect(() => {
-        let ignoreThis = false;
-        const sampleFn = async () => {
-            console.time("Recalculating simplified area");
-            console.log("Recalculating simplified area");
-
-            // TODO: set state; heed `ignoreThis`
-            const sample = absMaxSample(props.waveforms[0].numbers, props.width);
-            console.timeEnd("Recalculating simplified area");
-        }
-        sampleFn();
-
-        return () => {
-            ignoreThis = true;
-        };
-    }, [props.waveforms]);
-
     const handleMouseMove = (e: React.MouseEvent<SVGSVGElement, MouseEvent>) => {
         if (!isHandlingMouseMove) {
             const target = e.currentTarget;
@@ -123,7 +105,45 @@ export function Waveform2(props: IWaveformProps): JSX.Element {
 
     const xStart = Math.max(0, x.invert(margin.left));
     const xEnd = Math.min(xLength, x.invert(props.width - margin.right));
+    const visibleSamples = xEnd - xStart;
     // console.log(`xStart: ${xStart}; xEnd: ${xEnd}`, x.domain(), x.range(), x(0), x(xStart), x(xEnd), xLength);
+
+    const simplifiedAreaCount = props.width;
+    const [simplifiedWave, setSimplifiedWave] = React.useState<Float32Array | null>(null);
+    React.useEffect(() => {
+        let ignoreThis = false;
+        const sampleFn = async () => {
+            // TODO: all lines.
+            // TODO: bring up a level?
+            // TODO: min and max.
+            console.time("Recalculating simplified area");
+            // console.log("Recalculating simplified area");
+
+            // Make an area based on simplified data
+            const sample = absMaxSample(props.waveforms[0].numbers, simplifiedAreaCount);
+            
+            if (!ignoreThis) {
+                setSimplifiedWave(sample);
+            }
+
+            // if (!ignoreThis) {
+            //     setSimplifiedWave(42);
+            // }
+
+            console.timeEnd("Recalculating simplified area");
+        }
+        sampleFn();
+
+        return () => {
+            ignoreThis = true;
+        };
+    }, [props.waveforms]);
+
+    // This is an area designed to show a simplified waveform when zoomed out.
+    const simplifiedArea = d3.area<number>()
+        .x((d, i) => x(i * (xLength / simplifiedAreaCount)))
+        .y0(y(0))
+        .y1((d) => y(d));
 
     const yTicks = y.ticks(5);
 
@@ -153,7 +173,13 @@ export function Waveform2(props: IWaveformProps): JSX.Element {
             </g>
         : null;
 
+    const MAX_RENDERED_SAMPLES = 50000;
     const lines = props.waveforms.map((waveform, index) => {
+        // Only show when zoomed in enough.
+        if (visibleSamples > MAX_RENDERED_SAMPLES) {
+            return null;
+        }
+
         const lineGenerator = d3.line<number>()
             .x((d, i) => x(i + xStart))
             .y((d) => y(d));
@@ -215,10 +241,20 @@ export function Waveform2(props: IWaveformProps): JSX.Element {
             ))}
         </g>
         <g name="graphs">
+            {/* TODO: only show when zoomed in */}
             {lines}
         </g>
 
         {compressorSettings}
+
+        {/* Draw simplified area */}
+        {simplifiedWave !== null && (
+            <text x={40} y={40} fill="red">{simplifiedWave.length} points; {simplifiedWave[0]}</text>
+        )}
+        {simplifiedWave !== null && (
+            <path d={simplifiedArea(simplifiedWave)!}
+                fill="rgba(255,0,0,0.1)" stroke="red" strokeWidth={1} />
+        )}
 
         {/* Debug: draw start & end lines */}
         <g name="startEndLines">
