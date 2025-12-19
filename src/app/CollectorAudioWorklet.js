@@ -20,7 +20,7 @@ class CollectorAudioWorklet extends AudioWorkletProcessor {
      */
     process(inputs, outputs, parameters) {
         // Simply send a message with some of the input data for demonstration
-        this.port.postMessage({ input: inputs[0][0][0] });
+        // this.port.postMessage({ input: inputs[0][0][0] });
         // outputs = inputs;
 
         return false;
