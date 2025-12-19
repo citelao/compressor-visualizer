@@ -91,4 +91,11 @@ export default class Compressor {
         return Db.linearToDb(linearResult);
     }
 
+    public static compressLinear(compressorSettings: ICompressorSettings, sampleRate: number): number {
+        // TODO: inputs
+        const attackSample = compressorSettings.attack * sampleRate;
+        const releaseSample = compressorSettings.release * sampleRate;
+
+        // const foo = 
+    }
 }
