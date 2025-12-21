@@ -20,7 +20,7 @@ interface IAppState {
 
     audioSound: Sound | null,
 
-    transformedBuffer: AudioBuffer | null,
+    transformedResult: CompressedRenderResult | null,
     transformedRenderTimeMs: number,
 
     transformedSound: Sound | null,
@@ -43,7 +43,7 @@ export default class App extends React.Component<IAppProps, IAppState>
             audioBuffer: null,
             audioLoadTimeMs: 0,
 
-            transformedBuffer: null,
+            transformedResult: null,
             transformedRenderTimeMs: 0,
 
             transformedSound: null,
@@ -100,7 +100,7 @@ export default class App extends React.Component<IAppProps, IAppState>
     }
 
     public async componentDidUpdate(prevProps: IAppProps, prevState: IAppState) {
-        const hasRenderedTransform = !!this.state.transformedBuffer;
+        const hasRenderedTransform = !!this.state.transformedResult;
         const thresholdChanged = this.state.compressor.threshold != prevState.compressor.threshold;
         const ratioChanged = this.state.compressor.ratio != prevState.compressor.ratio;
         const attackChanged = this.state.compressor.attack != prevState.compressor.attack;
@@ -109,43 +109,16 @@ export default class App extends React.Component<IAppProps, IAppState>
 
         if (!hasRenderedTransform || thresholdChanged || ratioChanged || attackChanged || releaseChanged || shouldRemoveMakeupGainChanged) {
             const timer = new Timer();
-            const effectsBuffer = await renderEffectsChain(this.state.audioBuffer!, (ctx, buf) => {
-                const compressor = ctx.createDynamicsCompressor();
-                compressor.threshold.value = this.state.compressor.threshold;
-                compressor.knee.value = this.state.compressor.knee;
-                compressor.ratio.value = this.state.compressor.ratio;
-                compressor.attack.value = this.state.compressor.attack;
-                compressor.release.value = this.state.compressor.release;
+            const result = await renderCompressedChain(
+                this.state.audioBuffer!,
+                this.state.compressor,
+                this.state.shouldRemoveMakeupGain
+            );
 
-                // Invert the default makeup gain applied by the compressor.
-                const gain = ctx.createGain();
-                const makeupGainLinear = Compressor.makeupGainLinear(this.state.compressor);
-                const invertMakeupGain = 1 / makeupGainLinear;
-
-                if (this.state.shouldRemoveMakeupGain) {
-                    gain.gain.value = invertMakeupGain;
-                }
-
-                const fullRangeGainDb = Compressor.fullRangeGainDb(this.state.compressor);
-                const fullRangeGainLinear = Compressor.fullRangeGainLinear(this.state.compressor);
-                const makeupGainDb = Compressor.makeupGainDb(this.state.compressor);
-                const invertedDb = Db.linearToDb(invertMakeupGain);
-                let logString = `Default makeup gain: ${makeupGainDb.toFixed(2)}dB (${makeupGainLinear.toFixed(2)} linear)\n`;
-                logString += `\tFull range gain: ${fullRangeGainDb.toFixed(2)}dB (${fullRangeGainLinear.toFixed(2)} linear)\n`;
-                const appliedString = this.state.shouldRemoveMakeupGain ? "Applied" : "(Did not apply))";
-                logString += `=> ${appliedString} inverted makeup gain: ${invertedDb.toFixed(2)}dB (${invertMakeupGain.toFixed(2)} linear)`;
-                console.log(logString);
-
-                // const collector = new AudioWorkletNode(ctx, "collector-audio-worklet");
-                // collector.port.onmessage = (event) => {
-                //     console.log("Collector received:", event.data);
-                // };
-
-                return buf.connect(compressor).connect(gain)/* .connect(collector) */;
-            });
+            console.log("Rendered compressed chain", result.reduction);
 
             this.setState({
-                transformedBuffer: effectsBuffer,
+                transformedResult: result,
                 transformedRenderTimeMs: timer.stop()
             });
         }
@@ -158,7 +131,7 @@ export default class App extends React.Component<IAppProps, IAppState>
         const calcTimer = new Timer();
 
         const pureWaveform = channelData;
-        const transformedData = this.state.transformedBuffer?.getChannelData(0);
+        const transformedData = this.state.transformedResult?.outputBuffer.getChannelData(0);
         const calculationTime = calcTimer.stop();
 
         const getUpdatedCompressorSettings = (partial: Partial<ICompressorSettings>): ICompressorSettings => {
@@ -426,9 +399,16 @@ async function fetchAudioBuffer(uri: string): Promise<AudioBuffer> {
     });
 }
 
+type ChainFn = (context: OfflineAudioContext, bufferSource: AudioBufferSourceNode) => AudioNode;
+type SuspendCallbackFn = () => void;
+
 // Just give me a function that returns the AudioNode you want hooked up to the
 // destination.
-async function renderEffectsChain(inputBuffer: AudioBuffer, chainFn: (context: OfflineAudioContext, bufferSource: AudioBufferSourceNode) => AudioNode): Promise<AudioBuffer> {
+async function renderEffectsChain(
+    inputBuffer: AudioBuffer,
+    chainFn: ChainFn,
+    suspendRateS: number | undefined = undefined,
+    suspendCallbackFn: SuspendCallbackFn | undefined = undefined): Promise<AudioBuffer> {
     const audioContext = new OfflineAudioContext(inputBuffer.numberOfChannels, inputBuffer.length, inputBuffer.sampleRate);
     await audioContext.audioWorklet.addModule(CollectorAudioWorkletFile);
     // console.log(`Loaded audio worklet from ${CollectorAudioWorkletFile}`);
@@ -443,5 +423,72 @@ async function renderEffectsChain(inputBuffer: AudioBuffer, chainFn: (context: O
     // bufferSource.connect(compressor).connect(audioContext.destination);
 
     bufferSource.start();
+
+    if (suspendRateS && suspendCallbackFn) {
+        for (let t = 0; t < inputBuffer.duration; t += suspendRateS) {
+            audioContext.suspend(t).then(() => {
+                suspendCallbackFn();
+                audioContext.resume();
+            });
+        }
+    }
+
     return await audioContext.startRendering();
+}
+
+type CompressedRenderResult = {
+    outputBuffer: AudioBuffer,
+    reduction: Float32Array,
+};
+
+async function renderCompressedChain(inputBuffer: AudioBuffer, compressorState: ICompressorSettings, shouldRemoveMakeupGain: boolean): Promise<CompressedRenderResult> {
+    let compressor: DynamicsCompressorNode;
+
+    const suspendRateS = 0.1; // Suspend every 100ms
+    const suspendCount = inputBuffer.duration / suspendRateS;
+    console.log(`Will suspend ${suspendCount} times over ${inputBuffer.duration}s duration`);
+    const suspendArray = new Float32Array(suspendCount);
+    let suspendIndex = 0;
+
+    const renderFn = (ctx: OfflineAudioContext, buf: AudioBufferSourceNode): AudioNode => {
+        compressor = ctx.createDynamicsCompressor();
+        compressor.threshold.value = compressorState.threshold;
+        compressor.knee.value = compressorState.knee;
+        compressor.ratio.value = compressorState.ratio;
+        compressor.attack.value = compressorState.attack;
+        compressor.release.value = compressorState.release;
+
+        // Invert the default makeup gain applied by the compressor.
+        const gain = ctx.createGain();
+        const makeupGainLinear = Compressor.makeupGainLinear(compressorState);
+        const invertMakeupGain = 1 / makeupGainLinear;
+
+        if (shouldRemoveMakeupGain) {
+            gain.gain.value = invertMakeupGain;
+        }
+
+        const fullRangeGainDb = Compressor.fullRangeGainDb(compressorState);
+        const fullRangeGainLinear = Compressor.fullRangeGainLinear(compressorState);
+        const makeupGainDb = Compressor.makeupGainDb(compressorState);
+        const invertedDb = Db.linearToDb(invertMakeupGain);
+        let logString = `Default makeup gain: ${makeupGainDb.toFixed(2)}dB (${makeupGainLinear.toFixed(2)} linear)\n`;
+        logString += `\tFull range gain: ${fullRangeGainDb.toFixed(2)}dB (${fullRangeGainLinear.toFixed(2)} linear)\n`;
+        const appliedString = shouldRemoveMakeupGain ? "Applied" : "(Did not apply))";
+        logString += `=> ${appliedString} inverted makeup gain: ${invertedDb.toFixed(2)}dB (${invertMakeupGain.toFixed(2)} linear)`;
+        console.log(logString);
+
+        // const collector = new AudioWorkletNode(ctx, "collector-audio-worklet");
+        // collector.port.onmessage = (event) => {
+        //     console.log("Collector received:", event.data);
+        // };
+
+        return buf.connect(compressor).connect(gain)/* .connect(collector) */;
+    };
+
+    const suspendFn = () => {
+        suspendArray[suspendIndex++] = compressor.reduction;
+    }
+
+    const result = await renderEffectsChain(inputBuffer, renderFn, suspendRateS, suspendFn);
+    return { outputBuffer: result, reduction: suspendArray };
 }
