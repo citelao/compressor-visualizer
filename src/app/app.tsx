@@ -136,10 +136,10 @@ export default class App extends React.Component<IAppProps, IAppState>
                 logString += `=> ${appliedString} inverted makeup gain: ${invertedDb.toFixed(2)}dB (${invertMakeupGain.toFixed(2)} linear)`;
                 console.log(logString);
 
-                const collector = new AudioWorkletNode(ctx, "collector-audio-worklet");
-                collector.port.onmessage = (event) => {
-                    console.log("Collector received:", event.data);
-                };
+                // const collector = new AudioWorkletNode(ctx, "collector-audio-worklet");
+                // collector.port.onmessage = (event) => {
+                //     console.log("Collector received:", event.data);
+                // };
 
                 return buf.connect(compressor).connect(gain)/* .connect(collector) */;
             });
@@ -211,6 +211,7 @@ export default class App extends React.Component<IAppProps, IAppState>
 
             <ul>
                 <li>Analysis time: {calculationTime}ms</li>
+                <li>Modifying time: {this.state.transformedRenderTimeMs}ms</li>
             </ul>
 
             {/* TODO: allow uploading */}
