@@ -335,7 +335,7 @@ export default class App extends React.Component<IAppProps, IAppState>
     }
 
     private handlePlayModified = () => {
-        if (!this.state.audioContext || !this.state.transformedBuffer) {
+        if (!this.state.audioContext || !this.state.transformedResult) {
             throw new Error("You need an audio context and transformed buffer");
         }
 
@@ -347,7 +347,7 @@ export default class App extends React.Component<IAppProps, IAppState>
             console.log("Pausing transformed!");
             this.state.transformedSound.pause();
         } else {
-            const sound = new Sound(this.state.audioContext, this.state.transformedBuffer);
+            const sound = new Sound(this.state.audioContext, this.state.transformedResult?.outputBuffer);
 
             if (this.state.audioSound?.isPlaying()) {
                 console.log("Switching to transformed");

@@ -257,11 +257,12 @@ export function Waveform2(props: IWaveformProps): JSX.Element {
         <g name="reduction">
             {props.reduction ? (() => {
                 // Graph reduction from the top of the graph down. The number is in db.
-                const reductionLine = d3.line<number>()
+                const reductionLine = d3.area<number>()
                     .x((d, i) => x(i * (xLength / props.reduction!.length)))
-                    .y((d) => y(Db.dbToLinear(d)));
+                    .y0((d) => y(Db.dbToLinear(d)))
+                    .y1((d) => y(1.0));
                 return <path d={reductionLine(props.reduction)!}
-                    fill="none" stroke="orange" opacity={0.8} strokeWidth={1} />;
+                    stroke="orange" fill="orange" fillOpacity={0.2} strokeWidth={1} />;
             })() : null}
         </g>
 
