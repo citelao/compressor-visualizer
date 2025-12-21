@@ -115,7 +115,7 @@ export default class App extends React.Component<IAppProps, IAppState>
                 this.state.shouldRemoveMakeupGain
             );
 
-            console.log("Rendered compressed chain", result.reduction);
+            // console.log("Rendered compressed chain", result.reduction);
 
             this.setState({
                 transformedResult: result,
@@ -214,9 +214,10 @@ export default class App extends React.Component<IAppProps, IAppState>
             <p>Combined Waveforms</p>
             {
                 waveformsToShow.length > 0
-                ? <Waveform2 
+                ? <Waveform2
                     width={WAVEFORM_WIDTH}
                     waveforms={waveformsToShow}
+                    reduction={this.state.transformedResult?.reduction}
                     sampleRate={this.state.audioBuffer?.sampleRate}
                     compressorSettings={this.state.compressor} />
                 : null
@@ -399,6 +400,14 @@ async function fetchAudioBuffer(uri: string): Promise<AudioBuffer> {
     });
 }
 
+function getMinSuspendDurationS(context: OfflineAudioContext): number {
+    // The max suspend rate is per quantum, which is usually 128 samples (no way
+    // of looking that up).
+    // https://developer.mozilla.org/en-US/docs/Web/API/OfflineAudioContext/suspend
+    const renderQuantum = 128;
+    return renderQuantum / context.sampleRate; // (1 / (context.sampleRate / renderQuantum));
+}
+
 type ChainFn = (context: OfflineAudioContext, bufferSource: AudioBufferSourceNode) => AudioNode;
 type SuspendCallbackFn = () => void;
 
@@ -424,8 +433,16 @@ async function renderEffectsChain(
 
     bufferSource.start();
 
+    // This way, you can audit the state an an arbitrary rate.
+    // https://github.com/WebAudio/web-audio-api/issues/303#issuecomment-2079508496
+    //
+    // The max suspend rate is per quantum, which is usually 128 samples (no way
+    // of looking that up).
+    // https://developer.mozilla.org/en-US/docs/Web/API/OfflineAudioContext/suspend
     if (suspendRateS && suspendCallbackFn) {
-        for (let t = 0; t < inputBuffer.duration; t += suspendRateS) {
+        const sampleDuration = getMinSuspendDurationS(audioContext);
+        const actualSuspendRateS = Math.max(suspendRateS, sampleDuration);
+        for (let t = 0; t < inputBuffer.duration; t += actualSuspendRateS) {
             audioContext.suspend(t).then(() => {
                 suspendCallbackFn();
                 audioContext.resume();
@@ -444,7 +461,7 @@ type CompressedRenderResult = {
 async function renderCompressedChain(inputBuffer: AudioBuffer, compressorState: ICompressorSettings, shouldRemoveMakeupGain: boolean): Promise<CompressedRenderResult> {
     let compressor: DynamicsCompressorNode;
 
-    const suspendRateS = 0.1; // Suspend every 100ms
+    const suspendRateS = getMinSuspendDurationS(new OfflineAudioContext(1, 1, 44100));
     const suspendCount = inputBuffer.duration / suspendRateS;
     console.log(`Will suspend ${suspendCount} times over ${inputBuffer.duration}s duration`);
     const suspendArray = new Float32Array(suspendCount);

@@ -12,6 +12,10 @@ interface IIndependentWaveform {
 
 interface IWaveformProps {
     waveforms: IIndependentWaveform[];
+
+    // TODO: better types
+    reduction?: Float32Array;
+
     compressorSettings?: ICompressorSettings;
     sampleRate?: number;
     width: number;
@@ -248,6 +252,17 @@ export function Waveform2(props: IWaveformProps): JSX.Element {
         </g>
         <g name="simplifiedWaves">
             {waves}
+        </g>
+
+        <g name="reduction">
+            {props.reduction ? (() => {
+                // Graph reduction from the top of the graph down. The number is in db.
+                const reductionLine = d3.line<number>()
+                    .x((d, i) => x(i * (xLength / props.reduction!.length)))
+                    .y((d) => y(Db.dbToLinear(d)));
+                return <path d={reductionLine(props.reduction)!}
+                    fill="none" stroke="orange" opacity={0.8} strokeWidth={1} />;
+            })() : null}
         </g>
 
         {compressorSettings}
