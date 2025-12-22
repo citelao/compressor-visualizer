@@ -15,8 +15,17 @@ interface IAppProps {}
 
 interface IAudioTrack {
     name: string;
-    buffer: AudioBuffer;
+    url?: string; // URL to load on demand
+    buffer: AudioBuffer | null;
 }
+
+const DEFAULT_TRACKS: Omit<IAudioTrack, 'buffer'>[] = [
+    { name: "heaven-wasnt-made-for-me.mp3", url: "heaven-wasnt-made-for-me.mp3" },
+    { name: "MS0901_SnareNoComp.wav", url: "notrack/MS0901_SnareNoComp.wav" }, // YOU CAN HEAR THE DIFF!
+    // { name: "FourMoreWeeks_VansInJapan.mp3", url: "notrack/FourMoreWeeks_VansInJapan.mp3" },
+    // { name: "MS0908_Drums1NoComp_MR1001.wav", url: "notrack/MS0908_Drums1NoComp_MR1001.wav" }, // You can hear a diff!
+    // { name: "MS0912_GtrNoComp_MR0702.wav", url: "notrack/MS0912_GtrNoComp_MR0702.wav" },
+];
 
 interface IAppState {
     audioContext: AudioContext | null,
@@ -74,51 +83,21 @@ export default class App extends React.Component<IAppProps, IAppState>
 
     public async componentDidMount()
     {
-        // if (!this.audioRef || !this.audioRef.current) {
-        //     throw new Error("Expected an audio ref");
-        // }
-
-        const timer = new Timer();
-
-        // const buffer = await fetchAudioBuffer("notrack/FourMoreWeeks_VansInJapan.mp3");
-        // const buffer = await fetchAudioBuffer("notrack/MS0901_SnareNoComp.wav"); // YOU CAN HEAR THE DIFF!
-        const buffer = await fetchAudioBuffer("heaven-wasnt-made-for-me.mp3");
-        // const buffer = await fetchAudioBuffer("notrack/MS0908_Drums1NoComp_MR1001.wav"); // You can hear a diff!
-        // const buffer = await fetchAudioBuffer("notrack/MS0912_GtrNoComp_MR0702.wav");
-        console.log(buffer, absMeanSample(buffer.getChannelData(0), 1), rmsSample(buffer.getChannelData(0), 1));
-
         const audioContext = new AudioContext();
 
-        const audioSound = new Sound(audioContext, buffer);
-        audioSound.onStateChange(() => {
-            this.forceUpdate();
-        });
+        // Initialize tracks list with default tracks (buffers not loaded yet)
+        const initialTracks: IAudioTrack[] = DEFAULT_TRACKS.map(track => ({
+            ...track,
+            buffer: null
+        }));
 
-        // const bufferSource = audioContext.createBufferSource();
-        // bufferSource.buffer = buffer;
-
-        // const compressor = audioContext.createDynamicsCompressor();
-        // compressor.threshold.value = this.state.compressor.threshold;
-        // compressor.knee.value = this.state.compressor.knee;
-        // compressor.ratio.value = this.state.compressor.ratio;
-        // compressor.attack.value = this.state.compressor.attack;
-        // compressor.release.value = this.state.compressor.release;
-
-        // bufferSource.connect(audioContext.destination);
-        // // bufferSource.connect(compressor).connect(audioContext.destination);
-
-        const defaultTrack: IAudioTrack = {
-            name: "heaven-wasnt-made-for-me.mp3",
-            buffer: buffer
-        };
-
+        // Use callback form to ensure state is set before loading
         this.setState({
-            audioBuffer: buffer,
             audioContext: audioContext,
-            audioLoadTimeMs: timer.stop(),
-            audioSound: audioSound,
-            tracks: [defaultTrack],
-            selectedTrackIndex: 0
+            tracks: initialTracks
+        }, async () => {
+            // Load the first track after state is set
+            await this.loadTrack(0);
         });
 
         // Start the animation loop for the playhead
@@ -202,35 +181,22 @@ export default class App extends React.Component<IAppProps, IAppState>
                 }
             }
 
+            const loadTimeMs = timer.stop();
+
             const newTrack: IAudioTrack = {
                 name: file.name,
-                buffer: buffer
+                buffer: buffer,
+                // No URL for uploaded files
             };
 
             const newTracks = [...this.state.tracks, newTrack];
             const newIndex = newTracks.length - 1;
 
-            // Stop any currently playing sounds
-            this.state.audioSound?.stop();
-            this.state.transformedSound?.stop();
-
-            // Create new sound for the uploaded track
-            const audioSound = new Sound(audioContext, buffer);
-            audioSound.onStateChange(() => {
-                this.forceUpdate();
-            });
-
             this.setState({
-                audioBuffer: buffer,
-                audioContext: audioContext,
-                audioLoadTimeMs: timer.stop(),
-                audioSound: audioSound,
-                tracks: newTracks,
-                selectedTrackIndex: newIndex,
-                transformedSound: null,
-                transformedResult: null,
-                playheadPositionS: 0
+                tracks: newTracks
             });
+
+            this.switchToTrack(newIndex, buffer, loadTimeMs);
 
             // Reset the file input
             event.target.value = '';
@@ -240,30 +206,68 @@ export default class App extends React.Component<IAppProps, IAppState>
         }
     }
 
-    private handleTrackChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-        const newIndex = parseInt(event.target.value, 10);
-        if (newIndex < 0 || newIndex >= this.state.tracks.length) return;
+    private loadTrack = async (trackIndex: number) => {
+        if (trackIndex < 0 || trackIndex >= this.state.tracks.length) return;
 
-        const selectedTrack = this.state.tracks[newIndex];
+        const track = this.state.tracks[trackIndex];
 
+        // If buffer already loaded, just switch to it (with 0ms load time)
+        if (track.buffer) {
+            this.switchToTrack(trackIndex, track.buffer, 0);
+            return;
+        }
+
+        // If track has a URL, load it
+        if (track.url) {
+            try {
+                const timer = new Timer();
+                const buffer = await fetchAudioBuffer(track.url);
+                const loadTimeMs = timer.stop();
+
+                // Update the track in the tracks array with the loaded buffer
+                const updatedTracks = [...this.state.tracks];
+                updatedTracks[trackIndex] = {
+                    ...track,
+                    buffer: buffer
+                };
+
+                this.setState({
+                    tracks: updatedTracks
+                });
+
+                this.switchToTrack(trackIndex, buffer, loadTimeMs);
+            } catch (error) {
+                console.error('Error loading track:', error);
+                alert(`Failed to load track: ${track.name}`);
+            }
+        }
+    }
+
+    private switchToTrack = (trackIndex: number, buffer: AudioBuffer, loadTimeMs?: number) => {
         // Stop any currently playing sounds
         this.state.audioSound?.stop();
         this.state.transformedSound?.stop();
 
         // Create new sound for the selected track
-        const audioSound = new Sound(this.state.audioContext!, selectedTrack.buffer);
+        const audioSound = new Sound(this.state.audioContext!, buffer);
         audioSound.onStateChange(() => {
             this.forceUpdate();
         });
 
         this.setState({
-            audioBuffer: selectedTrack.buffer,
+            audioBuffer: buffer,
             audioSound: audioSound,
-            selectedTrackIndex: newIndex,
+            selectedTrackIndex: trackIndex,
             transformedSound: null,
             transformedResult: null,
-            playheadPositionS: 0
+            playheadPositionS: 0,
+            audioLoadTimeMs: loadTimeMs !== undefined ? loadTimeMs : this.state.audioLoadTimeMs
         });
+    }
+
+    private handleTrackChange = async (event: React.ChangeEvent<HTMLSelectElement>) => {
+        const newIndex = parseInt(event.target.value, 10);
+        await this.loadTrack(newIndex);
     }
 
     public render() {
@@ -325,6 +329,7 @@ export default class App extends React.Component<IAppProps, IAppState>
             </p>
 
             <ul>
+                <li>Load time: {this.state.audioLoadTimeMs}ms</li>
                 <li>Analysis time: {calculationTime}ms</li>
                 <li>Modifying time: {this.state.transformedRenderTimeMs}ms</li>
             </ul>
