@@ -46,10 +46,15 @@ export default class Sound {
 
     private node: AudioBufferSourceNode | null = null;
     private timer: ElapsedTimer | null = null;
+    private onStateChangeCallback: (() => void) | null = null;
 
     constructor(context: AudioContext, buffer: AudioBuffer) {
         this.context = context;
         this.buffer = buffer;
+    }
+
+    public onStateChange(callback: () => void) {
+        this.onStateChangeCallback = callback;
     }
 
     public start(when: number = 0, offsetS: number = 0) {
@@ -61,7 +66,7 @@ export default class Sound {
 
         this.timer = new ElapsedTimer(offsetS * 1000);
         this.node = bufferNode;
-
+        this.onStateChangeCallback?.();
     }
 
     public play() {
@@ -74,6 +79,7 @@ export default class Sound {
         this.node?.removeEventListener("ended", this.handleEnded);
         this.node?.stop();
         this.timer?.pause();
+        this.onStateChangeCallback?.();
     }
 
     public stop() {
@@ -81,6 +87,7 @@ export default class Sound {
         this.node?.stop();
         this.node = null;
         this.timer = null;
+        this.onStateChangeCallback?.();
     }
 
     public isPlaying(): boolean {
@@ -93,5 +100,6 @@ export default class Sound {
 
     private handleEnded = () => {
         this.timer = null;
+        this.onStateChangeCallback?.();
     }
 }

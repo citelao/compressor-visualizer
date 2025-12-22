@@ -77,6 +77,9 @@ export default class App extends React.Component<IAppProps, IAppState>
         const audioContext = new AudioContext();
 
         const audioSound = new Sound(audioContext, buffer);
+        audioSound.onStateChange(() => {
+            this.forceUpdate();
+        });
 
         // const bufferSource = audioContext.createBufferSource();
         // bufferSource.buffer = buffer;
@@ -348,6 +351,9 @@ export default class App extends React.Component<IAppProps, IAppState>
             this.state.transformedSound.pause();
         } else {
             const sound = new Sound(this.state.audioContext, this.state.transformedResult?.outputBuffer);
+            sound.onStateChange(() => {
+                this.forceUpdate();
+            });
 
             if (this.state.audioSound?.isPlaying()) {
                 console.log("Switching to transformed");
