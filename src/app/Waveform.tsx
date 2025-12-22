@@ -20,6 +20,7 @@ interface IWaveformProps {
     sampleRate?: number;
     width: number;
     height?: number;
+    playheadPosition?: number; // Position in seconds
 }
 
 interface IWaveformState {
@@ -273,6 +274,19 @@ export function Waveform2(props: IWaveformProps): JSX.Element {
         </g>
 
         {compressorSettings}
+
+        {/* Playhead */}
+        {props.playheadPosition !== undefined && props.sampleRate ? (() => {
+            const playheadSample = props.playheadPosition * props.sampleRate;
+            const playheadX = x(playheadSample);
+            return <g name="playhead">
+                <line x1={playheadX} x2={playheadX}
+                    y1={margin.top} y2={height - margin.bottom}
+                    stroke="red" strokeWidth={2} strokeOpacity={0.8} />
+                <polygon points={`${playheadX - 5},${margin.top} ${playheadX + 5},${margin.top} ${playheadX},${margin.top + 10}`}
+                    fill="red" />
+            </g>;
+        })() : null}
 
         {/* Debug: draw start & end lines */}
         <g name="startEndLines">

@@ -13,6 +13,11 @@ import { absMeanSample, rmsSample } from "./samples";
 
 interface IAppProps {}
 
+interface IAudioTrack {
+    name: string;
+    buffer: AudioBuffer;
+}
+
 interface IAppState {
     audioContext: AudioContext | null,
     audioBuffer: AudioBuffer | null,
@@ -27,11 +32,16 @@ interface IAppState {
 
     compressor: ICompressorSettings,
     shouldRemoveMakeupGain: boolean,
+
+    playheadPositionS: number,
+    tracks: IAudioTrack[],
+    selectedTrackIndex: number,
 }
 
 export default class App extends React.Component<IAppProps, IAppState>
 {
     private audioRef: React.RefObject<HTMLAudioElement | null>;
+    private animationFrameId: number | null = null;
 
     constructor(props: IAppProps) {
         super(props);
@@ -56,6 +66,9 @@ export default class App extends React.Component<IAppProps, IAppState>
                 release: .25
             },
             shouldRemoveMakeupGain: true,
+            playheadPositionS: 0,
+            tracks: [],
+            selectedTrackIndex: -1,
         };
     }
 
@@ -83,7 +96,7 @@ export default class App extends React.Component<IAppProps, IAppState>
 
         // const bufferSource = audioContext.createBufferSource();
         // bufferSource.buffer = buffer;
-    
+
         // const compressor = audioContext.createDynamicsCompressor();
         // compressor.threshold.value = this.state.compressor.threshold;
         // compressor.knee.value = this.state.compressor.knee;
@@ -94,12 +107,22 @@ export default class App extends React.Component<IAppProps, IAppState>
         // bufferSource.connect(audioContext.destination);
         // // bufferSource.connect(compressor).connect(audioContext.destination);
 
+        const defaultTrack: IAudioTrack = {
+            name: "heaven-wasnt-made-for-me.mp3",
+            buffer: buffer
+        };
+
         this.setState({
             audioBuffer: buffer,
             audioContext: audioContext,
             audioLoadTimeMs: timer.stop(),
-            audioSound: audioSound
+            audioSound: audioSound,
+            tracks: [defaultTrack],
+            selectedTrackIndex: 0
         });
+
+        // Start the animation loop for the playhead
+        this.startAnimationLoop();
     }
 
     public async componentDidUpdate(prevProps: IAppProps, prevState: IAppState) {
@@ -109,8 +132,10 @@ export default class App extends React.Component<IAppProps, IAppState>
         const attackChanged = this.state.compressor.attack != prevState.compressor.attack;
         const releaseChanged = this.state.compressor.release != prevState.compressor.release;
         const shouldRemoveMakeupGainChanged = this.state.shouldRemoveMakeupGain != prevState.shouldRemoveMakeupGain;
+        const trackChanged = this.state.selectedTrackIndex != prevState.selectedTrackIndex;
 
-        if (!hasRenderedTransform || thresholdChanged || ratioChanged || attackChanged || releaseChanged || shouldRemoveMakeupGainChanged) {
+        // Only render if we have an audio buffer and need a transform
+        if (this.state.audioBuffer && (!hasRenderedTransform || thresholdChanged || ratioChanged || attackChanged || releaseChanged || shouldRemoveMakeupGainChanged || trackChanged)) {
             const timer = new Timer();
             const result = await renderCompressedChain(
                 this.state.audioBuffer!,
@@ -125,6 +150,120 @@ export default class App extends React.Component<IAppProps, IAppState>
                 transformedRenderTimeMs: timer.stop()
             });
         }
+    }
+
+    public componentWillUnmount() {
+        if (this.animationFrameId !== null) {
+            cancelAnimationFrame(this.animationFrameId);
+        }
+    }
+
+    private startAnimationLoop = () => {
+        const updatePlayhead = () => {
+            const activeSound = this.state.audioSound?.isPlaying()
+                ? this.state.audioSound
+                : this.state.transformedSound?.isPlaying()
+                    ? this.state.transformedSound
+                    : null;
+
+            if (activeSound) {
+                const elapsedMs = activeSound.getElapsedMs();
+                this.setState({ playheadPositionS: elapsedMs / 1000 });
+            }
+
+            this.animationFrameId = requestAnimationFrame(updatePlayhead);
+        };
+
+        updatePlayhead();
+    }
+
+    private handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        try {
+            const arrayBuffer = await file.arrayBuffer();
+            const audioContext = this.state.audioContext || new AudioContext();
+            const timer = new Timer();
+
+            const buffer = await audioContext.decodeAudioData(arrayBuffer);
+            const durationS = buffer.length / buffer.sampleRate;
+
+            // Warn if file is too long
+            if (durationS > 10) {
+                const proceed = window.confirm(
+                    `Warning: This audio file is ${durationS.toFixed(1)} seconds long. ` +
+                    `Files longer than 10 seconds may cause performance issues. ` +
+                    `Do you want to continue?`
+                );
+                if (!proceed) {
+                    event.target.value = ''; // Reset the input
+                    return;
+                }
+            }
+
+            const newTrack: IAudioTrack = {
+                name: file.name,
+                buffer: buffer
+            };
+
+            const newTracks = [...this.state.tracks, newTrack];
+            const newIndex = newTracks.length - 1;
+
+            // Stop any currently playing sounds
+            this.state.audioSound?.stop();
+            this.state.transformedSound?.stop();
+
+            // Create new sound for the uploaded track
+            const audioSound = new Sound(audioContext, buffer);
+            audioSound.onStateChange(() => {
+                this.forceUpdate();
+            });
+
+            this.setState({
+                audioBuffer: buffer,
+                audioContext: audioContext,
+                audioLoadTimeMs: timer.stop(),
+                audioSound: audioSound,
+                tracks: newTracks,
+                selectedTrackIndex: newIndex,
+                transformedSound: null,
+                transformedResult: null,
+                playheadPositionS: 0
+            });
+
+            // Reset the file input
+            event.target.value = '';
+        } catch (error) {
+            console.error('Error loading audio file:', error);
+            alert('Failed to load audio file. Please make sure it is a valid audio file.');
+        }
+    }
+
+    private handleTrackChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+        const newIndex = parseInt(event.target.value, 10);
+        if (newIndex < 0 || newIndex >= this.state.tracks.length) return;
+
+        const selectedTrack = this.state.tracks[newIndex];
+
+        // Stop any currently playing sounds
+        this.state.audioSound?.stop();
+        this.state.transformedSound?.stop();
+
+        // Create new sound for the selected track
+        const audioSound = new Sound(this.state.audioContext!, selectedTrack.buffer);
+        audioSound.onStateChange(() => {
+            this.forceUpdate();
+        });
+
+        this.setState({
+            audioBuffer: selectedTrack.buffer,
+            audioSound: audioSound,
+            selectedTrackIndex: newIndex,
+            transformedSound: null,
+            transformedResult: null,
+            playheadPositionS: 0
+        });
     }
 
     public render() {
@@ -190,12 +329,32 @@ export default class App extends React.Component<IAppProps, IAppState>
                 <li>Modifying time: {this.state.transformedRenderTimeMs}ms</li>
             </ul>
 
-            {/* TODO: allow uploading */}
-            {/* <audio controls
-                src="notrack/ryan.wav"
-                ref={this.audioRef}>
-                Your browser does not support the audio element :(.
-            </audio> */}
+            <fieldset>
+                <legend>Audio Track</legend>
+
+                <label>
+                    Select track:{" "}
+                    <select
+                        value={this.state.selectedTrackIndex}
+                        onChange={this.handleTrackChange}
+                        disabled={this.state.tracks.length === 0}>
+                        {this.state.tracks.map((track, index) => (
+                            <option key={index} value={index}>
+                                {track.name}
+                            </option>
+                        ))}
+                    </select>
+                </label>
+                {" | "}
+                <label>
+                    Upload audio file:{" "}
+                    <input
+                        type="file"
+                        accept="audio/*"
+                        onChange={this.handleFileUpload} />
+                </label>
+            </fieldset>
+
             <button onClick={this.handlePlayOriginal}>
                 {this.state.audioSound?.isPlaying() 
                     ? "Pause original"
@@ -222,7 +381,8 @@ export default class App extends React.Component<IAppProps, IAppState>
                     waveforms={waveformsToShow}
                     reduction={this.state.transformedResult?.reduction}
                     sampleRate={this.state.audioBuffer?.sampleRate}
-                    compressorSettings={this.state.compressor} />
+                    compressorSettings={this.state.compressor}
+                    playheadPosition={this.state.playheadPositionS} />
                 : null
             }
 
@@ -304,12 +464,12 @@ export default class App extends React.Component<IAppProps, IAppState>
             <p>Original (length {this.state.audioBuffer?.length}; load: {this.state.audioLoadTimeMs}ms)</p>
             {
                 pureWaveform
-                ? <Waveform2 width={WAVEFORM_WIDTH} waveforms={[{ numbers: pureWaveform, color: "black" }]} sampleRate={this.state.audioBuffer?.sampleRate} />
+                ? <Waveform2 width={WAVEFORM_WIDTH} waveforms={[{ numbers: pureWaveform, color: "black" }]} sampleRate={this.state.audioBuffer?.sampleRate} playheadPosition={this.state.playheadPositionS} />
                 : null
             }
             <p>Modified (load: {this.state.transformedRenderTimeMs}ms):</p>
             {(transformedData)
-                ? <Waveform2 width={WAVEFORM_WIDTH} waveforms={[{ numbers: transformedData, color: "black" }]} sampleRate={this.state.audioBuffer?.sampleRate} />
+                ? <Waveform2 width={WAVEFORM_WIDTH} waveforms={[{ numbers: transformedData, color: "black" }]} sampleRate={this.state.audioBuffer?.sampleRate} playheadPosition={this.state.playheadPositionS} />
                 : null
             }
 
