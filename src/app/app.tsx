@@ -21,7 +21,7 @@ interface IAudioTrack {
 
 const DEFAULT_TRACKS: Omit<IAudioTrack, 'buffer'>[] = [
     { name: "heaven-wasnt-made-for-me.mp3", url: "heaven-wasnt-made-for-me.mp3" },
-    { name: "MS0901_SnareNoComp.wav", url: "notrack/MS0901_SnareNoComp.wav" }, // YOU CAN HEAR THE DIFF!
+    { name: "MS0901_SnareNoComp.wav", url: "MS0901_SnareNoComp.wav" }, // YOU CAN HEAR THE DIFF!
     // { name: "FourMoreWeeks_VansInJapan.mp3", url: "notrack/FourMoreWeeks_VansInJapan.mp3" },
     // { name: "MS0908_Drums1NoComp_MR1001.wav", url: "notrack/MS0908_Drums1NoComp_MR1001.wav" }, // You can hear a diff!
     // { name: "MS0912_GtrNoComp_MR0702.wav", url: "notrack/MS0912_GtrNoComp_MR0702.wav" },

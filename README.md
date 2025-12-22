@@ -24,3 +24,7 @@ npm test -- --run # helpful for Claude; run tests once.
 # Clear Vitest cache (if tests fail to run)
 npx vitest --clearCache
 ```
+
+## Acknowledgements
+
+* `MS0901_SnareNoComp.wav` is from Campbridge Music Technology's Mixing Secrets Chapter 9: [Compressing for a reason](https://cambridge-mt.com/ms3/ch9/).
