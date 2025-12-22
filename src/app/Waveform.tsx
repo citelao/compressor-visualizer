@@ -107,9 +107,16 @@ export function Waveform2(props: IWaveformProps): JSX.Element {
         d3.scaleLinear([0, xLength], [margin.left, props.width - margin.right])
     );
 
-    const xStart = Math.max(0, x.invert(margin.left));
-    const xEnd = Math.min(xLength, x.invert(props.width - margin.right));
-    const visibleSamples = xEnd - xStart;
+    // This is purely based on the zoom level: how many samples are
+    // theoretically on screen right now?
+    const xTheoreticStart = x.invert(margin.left);
+    const xTheoreticEnd = x.invert(props.width - margin.right)
+    const theoreticVisibleSamples = xTheoreticEnd - xTheoreticStart;
+
+    // Now, trim this to the actual dataset (e.g. if you scroll most of the
+    // dataset off the UI).
+    const xStart = Math.max(0, xTheoreticStart);
+    const xEnd = Math.min(xLength, xTheoreticEnd);
     // console.log(`xStart: ${xStart}; xEnd: ${xEnd}`, x.domain(), x.range(), x(0), x(xStart), x(xEnd), xLength);
 
     const simplifiedAreaCount = props.width;
@@ -171,7 +178,7 @@ export function Waveform2(props: IWaveformProps): JSX.Element {
     const MAX_RENDERED_SAMPLES = 50000;
     const lines = props.waveforms.map((waveform, index) => {
         // Only show when zoomed in enough.
-        if (visibleSamples > MAX_RENDERED_SAMPLES) {
+        if (theoreticVisibleSamples > MAX_RENDERED_SAMPLES) {
             return null;
         }
 
@@ -247,7 +254,6 @@ export function Waveform2(props: IWaveformProps): JSX.Element {
             ))}
         </g>
         <g name="graphs">
-            {/* TODO: only show when zoomed in */}
             {lines}
         </g>
         <g name="simplifiedWaves">
