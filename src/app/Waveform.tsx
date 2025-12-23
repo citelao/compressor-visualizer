@@ -315,7 +315,7 @@ function SimplifiedWaveform(props: ISimplifiedWaveformProps) {
         return () => {
             ignoreThis = true;
         };
-    }, [props.waveform]);
+    }, [props.waveform.numbers, props.numGroups]);
 
     if (simplifiedWave === null) {
         return null;
