@@ -5,7 +5,7 @@ import Db from "./Db";
 import { CompressorGraph, Graph2 } from "./Graph";
 import Sound from "./Sound";
 import Timer from "./Timer";
-import /* Waveform, */ { Waveform2 } from "./Waveform";
+import Waveform from "./Waveform";
 
 // Needles is a library for loudness metering. But it uses `window.` in its init
 // (to obtain a reference to the OfflineAudioContext). This would break offline
@@ -415,7 +415,7 @@ export default class App extends React.Component<IAppProps, IAppState>
             <p>Combined Waveforms</p>
             {
                 waveformsToShow.length > 0
-                ? <Waveform2
+                ? <Waveform
                     width={WAVEFORM_WIDTH}
                     waveforms={waveformsToShow}
                     reduction={this.state.transformedResult?.reduction}
@@ -516,12 +516,12 @@ export default class App extends React.Component<IAppProps, IAppState>
             <p>Original (length {this.state.audioBuffer?.length}; load: {this.state.audioLoadTimeMs}ms)</p>
             {
                 pureWaveform
-                ? <Waveform2 width={WAVEFORM_WIDTH} waveforms={[{ numbers: pureWaveform, color: "black" }]} sampleRate={this.state.audioBuffer?.sampleRate} playheadPosition={this.state.playheadPositionS} />
+                ? <Waveform width={WAVEFORM_WIDTH} waveforms={[{ numbers: pureWaveform, color: "black" }]} sampleRate={this.state.audioBuffer?.sampleRate} playheadPosition={this.state.playheadPositionS} />
                 : null
             }
             <p>Modified (load: {this.state.transformedRenderTimeMs}ms):</p>
             {(transformedData)
-                ? <Waveform2 width={WAVEFORM_WIDTH} waveforms={[{ numbers: transformedData, color: "black" }]} sampleRate={this.state.audioBuffer?.sampleRate} playheadPosition={this.state.playheadPositionS} />
+                ? <Waveform width={WAVEFORM_WIDTH} waveforms={[{ numbers: transformedData, color: "black" }]} sampleRate={this.state.audioBuffer?.sampleRate} playheadPosition={this.state.playheadPositionS} />
                 : null
             }
 

@@ -26,7 +26,7 @@ interface IWaveformProps {
 const HEIGHT = 300;
 
 // Reimplement as function component to test performance difference
-export function Waveform2(props: IWaveformProps): JSX.Element {
+export default function Waveform(props: IWaveformProps): JSX.Element {
     const [transform, setTransform] = React.useState<d3.ZoomTransform>(d3.zoomIdentity);
     const [hoverX, setHoverX] = React.useState<number | undefined>(undefined);
     const [isHandlingMouseMove, setIsHandlingMouseMove] = React.useState(false);
