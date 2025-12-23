@@ -163,7 +163,10 @@ export function Waveform2(props: IWaveformProps): JSX.Element {
     const hoveredGroup = isValidHover
         ? <g>
             <text x={hoverX! + 10} y={10} dominantBaseline="middle" textAnchor="start" fill="blue">
-                Sample {hoveredPosition}{hoveredS} : {hoveredPositions.map((val, index) => val?.toFixed(4) ?? "N/A").join(", ")}
+                Sample {hoveredPosition}{hoveredS} : {hoveredPositions.map((val, index) => {
+                    if (val === undefined) return "N/A";
+                    return `${Db.linearToDbfs(val).toFixed(1)}dBFS (${val.toFixed(2)})`;
+                }).join(", ")}
             </text>
             <line x1={x(hoveredPosition)} x2={x(hoveredPosition)}
                 y1={margin.top} y2={height - margin.bottom}
