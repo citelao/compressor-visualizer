@@ -23,11 +23,6 @@ interface IWaveformProps {
     playheadPosition?: number; // Position in seconds
 }
 
-interface IWaveformState {
-    transform: d3.ZoomTransform;
-    hoverX: number | undefined;
-}
-
 const HEIGHT = 300;
 
 // Reimplement as function component to test performance difference
@@ -251,6 +246,10 @@ export function Waveform2(props: IWaveformProps): JSX.Element {
                     <text stroke="black" x={props.width - margin.right - 5} y={y(tick)} dominantBaseline="middle" textAnchor="end">
                         <tspan opacity={0.7}>{tick.toFixed(1)}</tspan>
                     </text>
+
+                    <text stroke="black" x={props.width - margin.right - 35} y={y(tick)} dominantBaseline="middle" textAnchor="end">
+                        <tspan opacity={0.3}>{Db.linearToDbfs(tick).toFixed(0)} dBFS</tspan>
+                    </text>
                 </g>
             ))}
         </g>
@@ -307,5 +306,6 @@ export function Waveform2(props: IWaveformProps): JSX.Element {
                 y1={margin.top} y2={height - margin.bottom}
                 stroke="green" strokeOpacity={0.5} />
         </g>
+
     </svg>;
 }
