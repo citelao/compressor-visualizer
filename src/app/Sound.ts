@@ -25,7 +25,7 @@ class ElapsedTimer {
         }
 
         const ms = (new Date()).getTime() - this.startTime.getTime();
-        console.log(ms, this.offsetMs);
+        console.log("Pausing", ms, this.offsetMs);
         this.offsetMs += ms;
 
         this.startTime = null;
