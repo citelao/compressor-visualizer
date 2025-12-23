@@ -651,22 +651,32 @@ async function renderEffectsChain(
 
     bufferSource.start();
 
-    // This way, you can audit the state an an arbitrary rate.
-    // https://github.com/WebAudio/web-audio-api/issues/303#issuecomment-2079508496
-    //
-    // The max suspend rate is per quantum, which is usually 128 samples (no way
-    // of looking that up).
-    // https://developer.mozilla.org/en-US/docs/Web/API/OfflineAudioContext/suspend
-    if (suspendRateS && suspendCallbackFn) {
-        const sampleDuration = getMinSuspendDurationS(audioContext);
-        const actualSuspendRateS = Math.max(suspendRateS, sampleDuration);
-        for (let t = 0; t < inputBuffer.duration; t += actualSuspendRateS) {
-            audioContext.suspend(t).then(() => {
-                suspendCallbackFn();
-                audioContext.resume();
-            });
+    // .suspend on an OfflineAudioContext is not supported on Firefox yet. Catch
+    // errors and simply "fail gracefully."
+    // https://bugzilla.mozilla.org/show_bug.cgi?id=1265406
+    try {
+        // This way, you can audit the state an an arbitrary rate.
+        // https://github.com/WebAudio/web-audio-api/issues/303#issuecomment-2079508496
+        //
+        // The max suspend rate is per quantum, which is usually 128 samples (no way
+        // of looking that up).
+        // https://developer.mozilla.org/en-US/docs/Web/API/OfflineAudioContext/suspend
+        if (suspendRateS && suspendCallbackFn) {
+            const sampleDuration = getMinSuspendDurationS(audioContext);
+            const actualSuspendRateS = Math.max(suspendRateS, sampleDuration);
+            for (let t = 0; t < inputBuffer.duration; t += actualSuspendRateS) {
+                audioContext.suspend(t).then(() => {
+                    suspendCallbackFn();
+                    audioContext.resume();
+                });
+            }
         }
     }
+    catch(e) {
+        // TODO: show this to users. I don't want to plumb it yet.
+        console.warn("Error scheduling suspends:", e);
+    }
+
 
     return await audioContext.startRendering();
 }
