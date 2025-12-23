@@ -25,7 +25,6 @@ interface IWaveformProps {
 
 const HEIGHT = 300;
 
-// Reimplement as function component to test performance difference
 export default function Waveform(props: IWaveformProps): JSX.Element {
     const [transform, setTransform] = React.useState<d3.ZoomTransform>(d3.zoomIdentity);
     const [hoverX, setHoverX] = React.useState<number | undefined>(undefined);
@@ -116,32 +115,6 @@ export default function Waveform(props: IWaveformProps): JSX.Element {
     // console.log(`xStart: ${xStart}; xEnd: ${xEnd}`, x.domain(), x.range(), x(0), x(xStart), x(xEnd), xLength);
 
     const simplifiedAreaCount = props.width;
-    const [simplifiedWaves, setSimplifiedWaves] = React.useState<MinMaxSample[] | null>(null);
-    React.useEffect(() => {
-        let ignoreThis = false;
-        const sampleFn = async () => {
-            // TODO: only recalculate individual waveforms.
-            console.time("Recalculating simplified area");
-            const simplifiedWaves = props.waveforms.map((waveform) => {
-                // Make an area based on simplified data
-                const sample = minMaxSample(waveform.numbers, simplifiedAreaCount);
-                console.log("Simplified waveform:", sample);
-                return sample;
-
-            });
-
-            if (!ignoreThis) {
-                setSimplifiedWaves(simplifiedWaves);
-            }
-
-            console.timeEnd("Recalculating simplified area");
-        }
-        sampleFn();
-
-        return () => {
-            ignoreThis = true;
-        };
-    }, [props.waveforms]);
 
     const yTicks = y.ticks(5);
 
@@ -190,16 +163,16 @@ export default function Waveform(props: IWaveformProps): JSX.Element {
         </g>;
     });
 
-    const waves = simplifiedWaves !== null ? simplifiedWaves.map((wave, index) => {
-        // This is an area designed to show a simplified waveform when zoomed out.
-        const simplifiedArea = d3.area<number>()
-            .x((d, i) => x(i * (xLength / simplifiedAreaCount)))
-            .y0((d, i) => y(wave.mins[i]))
-            .y1((d, i) => y(wave.maxs[i]));
-
-        return <path key={index} d={simplifiedArea(d3.range(wave.mins.length))!}
-            fillOpacity={0.2} stroke={props.waveforms[index]?.color} fill={props.waveforms[index]?.color} strokeWidth={1} />;
-    }) : null;
+    const waves = props.waveforms.map((wave, index) => {
+        return <SimplifiedWaveform
+            key={index}
+            waveform={wave}
+            width={xLength}
+            numGroups={simplifiedAreaCount}
+            x={x}
+            y={y}
+        />;
+    });
 
     let compressorSettings: JSX.Element | null = null;
     if (props.compressorSettings) {
@@ -311,4 +284,49 @@ export default function Waveform(props: IWaveformProps): JSX.Element {
         </g>
 
     </svg>;
+}
+
+interface ISimplifiedWaveformProps {
+    waveform: IIndependentWaveform;
+    numGroups: number;
+    width: number;
+
+    x: d3.ScaleLinear<number, number>;
+    y: d3.ScaleLinear<number, number>;
+}
+
+function SimplifiedWaveform(props: ISimplifiedWaveformProps) {
+    const [simplifiedWave, setSimplifiedWave] = React.useState<MinMaxSample | null>(null);
+
+    React.useEffect(() => {
+        let ignoreThis = false;
+        const sampleFn = async () => {
+            console.time("Recalculating simplified area");
+            // Make an area based on simplified data
+            const simplifiedWave = minMaxSample(props.waveform.numbers, props.numGroups);
+            console.log("Simplified waveform:", simplifiedWave);
+            if (!ignoreThis) {
+                setSimplifiedWave(simplifiedWave);
+            }
+            console.timeEnd("Recalculating simplified area");
+        }
+        sampleFn();
+
+        return () => {
+            ignoreThis = true;
+        };
+    }, [props.waveform]);
+
+    if (simplifiedWave === null) {
+        return null;
+    }
+
+    // This is an area designed to show a simplified waveform when zoomed out.
+    const simplifiedArea = d3.area<number>()
+        .x((d, i) => props.x(i * (props.width / props.numGroups)))
+        .y0((d, i) => props.y(simplifiedWave.mins[i]))
+        .y1((d, i) => props.y(simplifiedWave.maxs[i]));
+
+    return <path d={simplifiedArea(d3.range(simplifiedWave.mins.length))!}
+        fillOpacity={0.2} stroke={props.waveform.color} fill={props.waveform.color} strokeWidth={1} />;
 }
