@@ -7,9 +7,21 @@ import Sound from "./Sound";
 import Timer from "./Timer";
 import /* Waveform, */ { Waveform2 } from "./Waveform";
 
+// Needles is a library for loudness metering. But it uses `window.` in its init
+// (to obtain a reference to the OfflineAudioContext). This would break offline
+// rendering if we import normally, so use dynamic imports instead.
+//
+// The `.catch` ensures that we ignore the offline rendering error (Astro
+// otherwise detects & handles the uncaught exception).
+//
+// https://stackoverflow.com/a/65452698/788168
+const needlesPromise = import("@domchristie/needles").catch(() => null);
+import worker from "@domchristie/needles/dist/needles-worker.js?url";
+
 // https://vite.dev/guide/assets#explicit-url-imports
 import CollectorAudioWorkletFile from "./CollectorAudioWorklet.js?url";
 import { absMeanSample, rmsSample } from "./samples";
+import type { LoudnessMeter } from "@domchristie/needles";
 
 interface IAppProps {}
 
@@ -17,9 +29,10 @@ interface IAudioTrack {
     name: string;
     url?: string; // URL to load on demand
     buffer: AudioBuffer | null;
+    loudness: number | null;
 }
 
-const DEFAULT_TRACKS: Omit<IAudioTrack, 'buffer'>[] = [
+const DEFAULT_TRACKS: Omit<IAudioTrack, 'buffer' | 'loudness'>[] = [
     { name: "heaven-wasnt-made-for-me.mp3", url: "heaven-wasnt-made-for-me.mp3" },
     { name: "MS0901_SnareNoComp.wav", url: "MS0901_SnareNoComp.wav" }, // YOU CAN HEAR THE DIFF!
     // { name: "FourMoreWeeks_VansInJapan.mp3", url: "notrack/FourMoreWeeks_VansInJapan.mp3" },
@@ -31,11 +44,13 @@ interface IAppState {
     audioContext: AudioContext | null,
     audioBuffer: AudioBuffer | null,
     audioLoadTimeMs: number,
+    audioLoudness: number | null,
 
     audioSound: Sound | null,
 
     transformedResult: CompressedRenderResult | null,
     transformedRenderTimeMs: number,
+    transformedLoudness: number | null,
 
     transformedSound: Sound | null,
 
@@ -61,9 +76,11 @@ export default class App extends React.Component<IAppProps, IAppState>
             audioContext: null,
             audioBuffer: null,
             audioLoadTimeMs: 0,
+            audioLoudness: null,
 
             transformedResult: null,
             transformedRenderTimeMs: 0,
+            transformedLoudness: null,
 
             transformedSound: null,
 
@@ -88,7 +105,8 @@ export default class App extends React.Component<IAppProps, IAppState>
         // Initialize tracks list with default tracks (buffers not loaded yet)
         const initialTracks: IAudioTrack[] = DEFAULT_TRACKS.map(track => ({
             ...track,
-            buffer: null
+            buffer: null,
+            loudness: null
         }));
 
         // Use callback form to ensure state is set before loading
@@ -122,7 +140,12 @@ export default class App extends React.Component<IAppProps, IAppState>
                 this.state.shouldRemoveMakeupGain
             );
 
-            // console.log("Rendered compressed chain", result.reduction);
+            // Get loudness
+            const loudnessPromise = getLoudness(result.outputBuffer);
+            loudnessPromise.then(loudness => {
+                // console.log("Loudness value:", loudness);
+                this.setState({ transformedLoudness: loudness });
+            });
 
             this.setState({
                 transformedResult: result,
@@ -166,6 +189,7 @@ export default class App extends React.Component<IAppProps, IAppState>
             const timer = new Timer();
 
             const buffer = await audioContext.decodeAudioData(arrayBuffer);
+            const audioLoudness = await getLoudness(buffer);
             const durationS = buffer.length / buffer.sampleRate;
 
             // Warn if file is too long
@@ -186,6 +210,7 @@ export default class App extends React.Component<IAppProps, IAppState>
             const newTrack: IAudioTrack = {
                 name: file.name,
                 buffer: buffer,
+                loudness: audioLoudness,
                 // No URL for uploaded files
             };
 
@@ -196,7 +221,7 @@ export default class App extends React.Component<IAppProps, IAppState>
                 tracks: newTracks
             });
 
-            this.switchToTrack(newIndex, buffer, loadTimeMs);
+            this.switchToTrack(newTrack, loadTimeMs);
 
             // Reset the file input
             event.target.value = '';
@@ -213,40 +238,42 @@ export default class App extends React.Component<IAppProps, IAppState>
 
         // If buffer already loaded, just switch to it (with 0ms load time)
         if (track.buffer) {
-            this.switchToTrack(trackIndex, track.buffer, 0);
+            this.switchToTrack(track, 0);
             return;
         }
 
         // If track has a URL, load it
         if (track.url) {
-            try {
-                const timer = new Timer();
-                const buffer = await fetchAudioBuffer(track.url);
-                const loadTimeMs = timer.stop();
+            const timer = new Timer();
+            const buffer = await fetchAudioBuffer(track.url);
+            const audioLoudness = await getLoudness(buffer);
+            const loadTimeMs = timer.stop();
 
-                // Update the track in the tracks array with the loaded buffer
-                const updatedTracks = [...this.state.tracks];
-                updatedTracks[trackIndex] = {
-                    ...track,
-                    buffer: buffer
-                };
+            // Update the track in the tracks array with the loaded buffer
+            const updatedTracks = [...this.state.tracks];
+            updatedTracks[trackIndex] = {
+                ...track,
+                buffer: buffer,
+                loudness: audioLoudness
+            };
 
-                this.setState({
-                    tracks: updatedTracks
-                });
+            this.setState({
+                tracks: updatedTracks
+            });
 
-                this.switchToTrack(trackIndex, buffer, loadTimeMs);
-            } catch (error) {
-                console.error('Error loading track:', error);
-                alert(`Failed to load track: ${track.name}`);
-            }
+            this.switchToTrack(updatedTracks[trackIndex], loadTimeMs);
         }
     }
 
-    private switchToTrack = (trackIndex: number, buffer: AudioBuffer, loadTimeMs?: number) => {
+    private switchToTrack = (track: IAudioTrack, loadTimeMs?: number) => {
         // Stop any currently playing sounds
         this.state.audioSound?.stop();
         this.state.transformedSound?.stop();
+
+        const buffer = track.buffer;
+        if (!buffer) {
+            throw new Error(`Track buffer is not loaded: ${track.name}`);
+        }
 
         // Create new sound for the selected track
         const audioSound = new Sound(this.state.audioContext!, buffer);
@@ -254,12 +281,19 @@ export default class App extends React.Component<IAppProps, IAppState>
             this.forceUpdate();
         });
 
+        const index = this.state.tracks.findIndex(t => t.name === track.name);
+        if (index === -1) {
+            throw new Error(`Track not found in state.tracks array: ${track.name}. ${this.state.tracks.map(t => t.name).join(', ')}`);
+        }
+
         this.setState({
             audioBuffer: buffer,
             audioSound: audioSound,
-            selectedTrackIndex: trackIndex,
+            audioLoudness: track.loudness,
+            selectedTrackIndex: index,
             transformedSound: null,
             transformedResult: null,
+            transformedLoudness: null,
             playheadPositionS: 0,
             audioLoadTimeMs: loadTimeMs !== undefined ? loadTimeMs : this.state.audioLoadTimeMs
         });
@@ -390,6 +424,19 @@ export default class App extends React.Component<IAppProps, IAppState>
                     playheadPosition={this.state.playheadPositionS} />
                 : null
             }
+
+            <table>
+                <tbody>
+                    <tr>
+                        <th>Original Loudness (LUFS)</th>
+                        <td>{this.state.audioLoudness !== null ? this.state.audioLoudness.toFixed(2) : "N/A"}</td>
+                    </tr>
+                    <tr>
+                        <th>Transformed Loudness (LUFS)</th>
+                        <td>{this.state.transformedLoudness !== null ? this.state.transformedLoudness.toFixed(2) : "N/A"}</td>
+                    </tr>
+                </tbody>
+            </table>
 
             <fieldset>
                 <legend>Controls</legend>
@@ -630,6 +677,7 @@ type CompressedRenderResult = {
 };
 
 async function renderCompressedChain(inputBuffer: AudioBuffer, compressorState: ICompressorSettings, shouldRemoveMakeupGain: boolean): Promise<CompressedRenderResult> {
+    let loudnessMeter: LoudnessMeter | undefined;
     let compressor: DynamicsCompressorNode;
 
     const suspendRateS = getMinSuspendDurationS(new OfflineAudioContext(1, 1, 44100));
@@ -679,4 +727,38 @@ async function renderCompressedChain(inputBuffer: AudioBuffer, compressorState: 
 
     const result = await renderEffectsChain(inputBuffer, renderFn, suspendRateS, suspendFn);
     return { outputBuffer: result, reduction: suspendArray };
+}
+
+// Return the integrated loudness (LUFS) of the input buffer
+async function getLoudness(inputBuffer: AudioBuffer): Promise<number> {
+    // Can't be done offline: Needles uses `window.`.
+    if (!window)
+    {
+        throw new Error("LUFS cannot be calculated in a non-browser environment");
+    }
+
+    // Weird load method: see the import at the top.
+    const needles = await needlesPromise;
+    if (!needles)
+    {
+        throw new Error("Failed to load needles module online");
+    }
+
+    return new Promise<number>(async (resolve, reject) => {
+        const audioContext = new OfflineAudioContext(inputBuffer.numberOfChannels, inputBuffer.length, inputBuffer.sampleRate);
+        const bufferSource = audioContext.createBufferSource();
+        bufferSource.buffer = inputBuffer;
+
+        const loudnessMeter = new needles.LoudnessMeter({
+            source: bufferSource,
+            modes: ["integrated"],
+            workerUri: worker,
+        });
+
+        loudnessMeter.on("dataavailable", (value) => {
+            // console.log("Loudness value:", value.data.value, value.data.mode);
+            resolve(value.data.value);
+        });
+        loudnessMeter.start();
+    });
 }
