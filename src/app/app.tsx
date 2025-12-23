@@ -215,13 +215,13 @@ export default class App extends React.Component<IAppProps, IAppState>
             };
 
             const newTracks = [...this.state.tracks, newTrack];
-            const newIndex = newTracks.length - 1;
 
             this.setState({
                 tracks: newTracks
+            }, () => {
+                // Wait for state to update before switching to the new track
+                this.switchToTrack(newTrack, loadTimeMs);
             });
-
-            this.switchToTrack(newTrack, loadTimeMs);
 
             // Reset the file input
             event.target.value = '';
