@@ -33,6 +33,13 @@ npx vitest --clearCache
 
 Push to main! GitHub Actions will publish to [citelao.github.io/compressor-visualizer/](https://citelao.github.io/compressor-visualizer/).
 
+## TODO
+
+* [ ] Waveforms should get more detailed when zoomed in; they are currently calculated for the default zoom level and then scale naively.
+* [ ] Draggable playhead
+* [ ] Custom makeup gain
+* [ ] Prettier
+
 ## Acknowledgements
 
 * `MS0901_SnareNoComp.wav` is from Campbridge Music Technology's Mixing Secrets Chapter 9: [Compressing for a reason](https://cambridge-mt.com/ms3/ch9/).
