@@ -2,6 +2,10 @@
 
 A simple app to visualize the effect that compressors have on audio.
 
+![A compressed waveform overlaid on the original, with compression amount drawn above](./doc/img/simple-compressor.png)
+
+Check it out on [citelao.github.io/compressor-visualizer/](https://citelao.github.io/compressor-visualizer/).
+
 ## Usage
 
 ```pwsh
@@ -24,6 +28,10 @@ npm test -- --run # helpful for Claude; run tests once.
 # Clear Vitest cache (if tests fail to run)
 npx vitest --clearCache
 ```
+
+### Deploy
+
+Push to main! GitHub Actions will publish to [citelao.github.io/compressor-visualizer/](https://citelao.github.io/compressor-visualizer/).
 
 ## Acknowledgements
 
