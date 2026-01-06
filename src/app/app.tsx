@@ -525,6 +525,7 @@ export default class App extends React.Component<IAppProps, IAppState>
                 : null
             }
 
+            <center>Made by <a href="https://ben.stolovitz.com">Ben Stolovitz</a>, <a href="https://github.com/citelao/compressor-visualizer/">source on GitHub</a></center>
         </>;
     }
 
