@@ -4,7 +4,7 @@ A simple app to visualize the effect that compressors have on audio.
 
 ![A compressed waveform overlaid on the original, with compression amount drawn above](./doc/img/simple-compressor.png)
 
-Check it out on [citelao.github.io/compressor-visualizer/](https://citelao.github.io/compressor-visualizer/).
+Check it out on [citelao.github.io/compressor-visualizer/](https://citelao.github.io/compressor-visualizer/). Also check out the [announcement blog post](https://ben.stolovitz.com/posts/visualizing-audio-compressors/).
 
 ## Usage
 
